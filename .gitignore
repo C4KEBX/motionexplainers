@@ -1,0 +1,8 @@
+node_modules/
+out/
+coverage/
+spikes/.venv/
+spikes/out/
+tests/render/_tmp/
+.superpowers/
+.DS_Store

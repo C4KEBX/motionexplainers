@@ -1,0 +1,32 @@
+import React from "react";
+import { AbsoluteFill, Series } from "remotion";
+import type { ComposedScene } from "../pipeline/resolveScene";
+import { BigNumber } from "../scenes/big-number/BigNumber";
+import { Title } from "../scenes/title/Title";
+import { PALETTE } from "../design/tokens";
+
+const SceneSwitch: React.FC<{ composed: ComposedScene }> = ({ composed }) => {
+  const { scene, cues, durationFrames } = composed;
+  switch (scene.type) {
+    case "title":
+      return <Title props={scene.props} cues={cues} durationFrames={durationFrames} />;
+    case "big-number":
+      return <BigNumber props={scene.props} cues={cues} durationFrames={durationFrames} />;
+    default: {
+      const unreachable: never = scene;
+      throw new Error(`Unhandled scene type: ${JSON.stringify(unreachable)}`);
+    }
+  }
+};
+
+export const Video: React.FC<{ scenes: ComposedScene[] }> = ({ scenes }) => (
+  <AbsoluteFill style={{ background: PALETTE.ground }}>
+    <Series>
+      {scenes.map((composed) => (
+        <Series.Sequence key={composed.id} durationInFrames={composed.durationFrames}>
+          <SceneSwitch composed={composed} />
+        </Series.Sequence>
+      ))}
+    </Series>
+  </AbsoluteFill>
+);
