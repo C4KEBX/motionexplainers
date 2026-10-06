@@ -77,6 +77,13 @@ Charts are pure functions of `(data, frame)`, built with SVG and d3 math (`d3-sc
 - Callout annotations pop in exactly on their cue word.
 - Camera pushes in on the key segment.
 
+### Chart decisions (Plan 2)
+- Chart data must deep-equal a `dataset` on a sourced fact; the last line-chart value must display exactly at the scene's `decimals`.
+- Callouts on line charts carry an `x` data anchor and appear once both the cue word has been spoken and the line has reached `x`. Callout text is capped at 24 characters and is not traced to facts (the script/fact-check step must verify it).
+- Bar races support at most 8 distinct entities (one palette color each).
+- Camera push-in and scene-to-scene transitions are deferred to the polish plan (scaling a whole chart pushes tick labels out of the safe gutters).
+- The voice step and word-splitting normalizer move to the plan that adds captions and audio finish; Plan 2 uses synthetic word timings (`fixtures/synthWords.ts`).
+
 ### Scene library (v1)
 `line-chart`, `bar-chart` / `bar-race`, `big-number`, `kinetic-text`, `timeline`, `map` (history; free `world-atlas` data), `compare`, `quote`, `title` / `outro`. Nothing beyond this until real videos demand it.
 
@@ -112,7 +119,7 @@ Each milestone ends in something watchable.
 
 1. **Spike**: word timings from Edge TTS or Kokoro; Remotion render-time measurement on this Mac.
 2. **Foundation**: design tokens, motion primitives, schema, 10s hello-world render.
-3. **Charts first**: `line-chart`, `bar-race`, `big-number`. The animation quality bar is proven here before any breadth.
+3. **Charts first**: `line-chart`, `bar-race`, `big-number`. The animation quality bar is proven here before any breadth. **Done (Plan 2)**: animated line chart (running-max axis rescale, leading dot, count-up readout, data-anchored callouts) and bar race (eased rank swaps, top-N fade, stable colors) render in `FinanceDemo` at about 0.06 s/frame.
 4. **Text and layout scenes**: `kinetic-text`, `compare`, `quote`, scene transitions.
 5. **History scenes**: `timeline`, `map`.
 6. **Audio finish**: captions, music ducking, loudness.

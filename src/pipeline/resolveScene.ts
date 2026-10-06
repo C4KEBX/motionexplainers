@@ -8,7 +8,7 @@ import {
   type WordTiming,
 } from "../schema/timing";
 
-export type ResolvedCue = { frame: number; do: "callout" | "emphasize"; text?: string };
+export type ResolvedCue = { frame: number; do: "callout" | "emphasize"; text?: string; x?: number };
 
 export type ComposedScene = {
   id: string;
@@ -31,6 +31,7 @@ export function composeScenes(
         frame: msToFrame(resolveCue(words, cue.atWord, cue.occurrence), fps),
         do: cue.do,
         text: cue.text,
+        x: cue.x,
       }));
       return { id: scene.id, scene, cues, durationFrames: msToFrame(sceneDurationMs(words), fps) };
     } catch (error) {

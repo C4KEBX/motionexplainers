@@ -27,3 +27,16 @@
 - Version pins that matter: all `remotion*` at 4.0.533, zod exactly 4.5.4.
 - Visual notes from the hello render: motion reads well (staggered pops, count-up with no overshoot, callout on cue word). Things to improve in the design pass: the title headline wraps awkwardly ("500 in" split from "S&P") so add balanced wrapping; scenes cut hard with no transition (milestone 4); number card right edge sits ~52px from the edge (gutter target is 60px) because of the offset block; content sits high because the bottom safe zone is 20%.
 - Scene library next: line-chart, bar-race (spec milestone 3).
+
+## C. FinanceDemo render (date: 2026-10-06)
+- Frames: 752 (25.07 s), wall time 46.8 s including bundling and system-ffmpeg encode, about 0.062 s/frame (4 scene types; line charts rebuild their SVG path every frame)
+- Estimated 60s video (1800 frames): about 2 min
+- Verdict: acceptable (<10 min)
+
+## Inputs for Plan 3 (voice, captions, audio finish)
+- Replace `fixtures/synthWords.ts` with the real voice step: Edge TTS WordBoundary plus the splitting normalizer (cases in section A, plus the cue-token collision where "$1.5" and "15" normalize to the same token).
+- Encoding is system-ffmpeg only (`src/pipeline/encode.ts`); audio mux and loudness normalization go through the same path.
+- FinanceDemo render budget: about 0.062 s/frame (about 2 min for 60 s). Line charts rebuild their SVG path every frame; still comfortably in budget.
+- Visual follow-ups seen while reviewing the chart renders and not fixed: a callout can cover a y tick label ("1,000" under the 2008 badge) and the line start can hide the "0%" tick; bar-race name labels overlap neighbouring bars briefly mid-swap; the line-chart area fill ends in a hard vertical edge at the cursor; no scene transitions or camera push yet.
+- Known gaps: callout text and chart titles are not traced to facts; numbers inside title headlines are not traced.
+- Scene library still missing from the spec: kinetic-text, timeline, map, compare, quote.

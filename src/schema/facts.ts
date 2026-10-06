@@ -5,7 +5,8 @@ const FactSchema = z.strictObject({
   id: z.string().min(1),
   claim: z.string().min(1),
   value: z.number().optional(),
-  source: z.strictObject({ name: z.string().min(1), url: z.url() }),
+  dataset: z.json().optional(),
+  source: z.strictObject({ name: z.string().min(1), url: z.url().refine((u) => /^https?:\/\//i.test(u), "source url must be http(s)") }),
 });
 
 export const FactsSchema = z

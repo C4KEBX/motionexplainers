@@ -2,6 +2,8 @@ import React from "react";
 import { AbsoluteFill, Series } from "remotion";
 import type { ComposedScene } from "../pipeline/resolveScene";
 import { BigNumber } from "../scenes/big-number/BigNumber";
+import { BarRace } from "../scenes/bar-race/BarRace";
+import { LineChart } from "../scenes/line-chart/LineChart";
 import { Title } from "../scenes/title/Title";
 import { PALETTE } from "../design/tokens";
 
@@ -12,6 +14,10 @@ const SceneSwitch: React.FC<{ composed: ComposedScene }> = ({ composed }) => {
       return <Title props={scene.props} cues={cues} durationFrames={durationFrames} />;
     case "big-number":
       return <BigNumber props={scene.props} cues={cues} durationFrames={durationFrames} />;
+    case "line-chart":
+      return <LineChart props={scene.props} cues={cues} durationFrames={durationFrames} />;
+    case "bar-race":
+      return <BarRace props={scene.props} cues={cues} durationFrames={durationFrames} />;
     default: {
       const unreachable: never = scene;
       throw new Error(`Unhandled scene type: ${JSON.stringify(unreachable)}`);

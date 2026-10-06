@@ -13,10 +13,10 @@ export function fitFontSize(
 }
 
 export function formatNumber(value: number, decimals: number): string {
-  const safe = value === 0 ? 0 : value; // -0 -> 0
-  return safe.toLocaleString("en-US", {
+  return value.toLocaleString("en-US", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
+    signDisplay: "negative", // no sign when the rounded result is zero
   });
 }
 

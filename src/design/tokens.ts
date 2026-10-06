@@ -22,3 +22,8 @@ export const TITLE_LANE = {
   width: VIDEO.width - 2 * SAFE.side,
   height: VIDEO.height - SAFE.top - SAFE.bottom - 140,
 } as const;
+
+/** Categorical series colors (bar races). Deliberately excludes the semantic gain/loss colors. */
+export const CATEGORICAL = [
+  "#ffd23f", "#7c8cff", "#ff9f5a", "#5ad1ff", "#c78bff", "#9be564", "#ff7ab6", "#8fa3b8",
+] as const;

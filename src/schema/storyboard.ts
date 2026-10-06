@@ -13,7 +13,8 @@ export const CueSchema = z.strictObject({
   atWord: z.string().min(1),
   occurrence: z.number().int().min(1).default(1),
   do: z.enum(["callout", "emphasize"]),
-  text: z.string().min(1).optional(),
+  text: z.string().min(1).max(24).optional(),
+  x: z.number().optional(),
 }).refine((cue) => cue.do !== "callout" || cue.text !== undefined, {
   message: "a callout cue requires text",
   path: ["text"],
@@ -48,7 +49,102 @@ const BigNumberSceneSchema = z.strictObject({
   }),
 });
 
-const SceneSchema = z.discriminatedUnion("type", [TitleSceneSchema, BigNumberSceneSchema]);
+const PointSchema = z.strictObject({ x: z.number(), y: z.number() });
+
+const LineChartSceneSchema = z.strictObject({
+  ...sceneBase,
+  type: z.literal("line-chart"),
+  props: z
+    .strictObject({
+      title: z.string().min(1).max(32),
+      points: z.array(PointSchema).min(2).max(60),
+      xFormat: z.enum(["year", "number"]).default("number"),
+      prefix: z.string().max(4).default(""),
+      suffix: z.string().max(6).default(""),
+      decimals: z.number().int().min(0).max(4).default(0),
+      tone: z.enum(TONES).default("highlight"),
+      baseline: z.enum(["zero", "data"]).default("zero"),
+      factId: z.string().min(1),
+    })
+    .superRefine((props, ctx) => {
+      props.points.forEach((point, i) => {
+        if (i > 0 && point.x <= props.points[i - 1].x) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["points", i, "x"],
+            message: "x values must be strictly increasing",
+          });
+        }
+      });
+    }),
+});
+
+const MAX_RACE_ENTITIES = 8; // matches the CATEGORICAL palette size
+
+const RaceFrameSchema = z
+  .strictObject({
+    label: z.string().min(1).max(12),
+    values: z
+      .array(z.strictObject({ name: z.string().min(1).max(18), value: z.number().min(0) }))
+      .min(2)
+      .max(12),
+  })
+  .superRefine((frame, ctx) => {
+    const seen = new Set<string>();
+    frame.values.forEach((v, i) => {
+      if (seen.has(v.name)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["values", i, "name"],
+          message: `duplicate name "${v.name}" in frame "${frame.label}"`,
+        });
+      }
+      seen.add(v.name);
+    });
+  });
+
+const BarRaceSceneSchema = z.strictObject({
+  ...sceneBase,
+  type: z.literal("bar-race"),
+  props: z
+    .strictObject({
+      title: z.string().min(1).max(32),
+      frames: z.array(RaceFrameSchema).min(2).max(20),
+      prefix: z.string().max(4).default(""),
+      suffix: z.string().max(6).default(""),
+      decimals: z.number().int().min(0).max(4).default(0),
+      topN: z.number().int().min(3).max(8).default(5),
+      factId: z.string().min(1),
+    })
+    .superRefine((props, ctx) => {
+      const names = new Set(props.frames.flatMap((frame) => frame.values.map((v) => v.name)));
+      if (names.size > MAX_RACE_ENTITIES) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["frames"],
+          message: `a bar race supports at most ${MAX_RACE_ENTITIES} distinct names (one color each); got ${names.size}`,
+        });
+      }
+      const seen = new Set<string>();
+      props.frames.forEach((frame, i) => {
+        if (seen.has(frame.label)) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["frames", i, "label"],
+            message: `duplicate frame label "${frame.label}"`,
+          });
+        }
+        seen.add(frame.label);
+      });
+    }),
+});
+
+const SceneSchema = z.discriminatedUnion("type", [
+  TitleSceneSchema,
+  BigNumberSceneSchema,
+  LineChartSceneSchema,
+  BarRaceSceneSchema,
+]);
 
 export const StoryboardSchema = z
   .strictObject({
@@ -79,6 +175,8 @@ export type Storyboard = z.output<typeof StoryboardSchema>;
 export type Scene = Storyboard["scenes"][number];
 export type TitleProps = Extract<Scene, { type: "title" }>["props"];
 export type BigNumberProps = Extract<Scene, { type: "big-number" }>["props"];
+export type LineChartProps = Extract<Scene, { type: "line-chart" }>["props"];
+export type BarRaceProps = Extract<Scene, { type: "bar-race" }>["props"];
 
 export function parseStoryboard(input: unknown): Storyboard {
   const result = StoryboardSchema.safeParse(input);

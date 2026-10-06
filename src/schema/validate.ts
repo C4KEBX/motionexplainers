@@ -1,7 +1,8 @@
 import { fitTitleFontSize, formatNumber } from "../design/layout";
 import { TITLE_LANE } from "../design/tokens";
 import type { Facts } from "./facts";
-import { StoryboardError, type Storyboard } from "./storyboard";
+import { deepEqual } from "./deepEqual";
+import { StoryboardError, type Scene, type Storyboard } from "./storyboard";
 
 export const MIN_VIDEO_MS = 55_000;
 export const MAX_VIDEO_MS = 60_000;
@@ -17,31 +18,78 @@ export function assertVariety(sb: Storyboard): void {
   }
 }
 
+type NumberScene = Extract<Scene, { type: "big-number" }>;
+type ChartScene = Extract<Scene, { type: "line-chart" }>;
+type RaceScene = Extract<Scene, { type: "bar-race" }>;
+type Fact = Facts["facts"][number];
+
+function assertNumberFact(scene: NumberScene, fact: Fact): void {
+  if (fact.value === undefined) {
+    throw new StoryboardError(
+      `Scene "${scene.id}": fact "${fact.id}" has no value to verify the displayed number against`,
+    );
+  }
+  if (fact.value !== scene.props.value) {
+    throw new StoryboardError(
+      `Scene "${scene.id}" shows ${scene.props.value} but fact "${fact.id}" says ${fact.value}`,
+    );
+  }
+  const { value, decimals } = scene.props;
+  const displayed = Number(formatNumber(value, decimals).replace(/,/g, ""));
+  if (displayed !== value) {
+    throw new StoryboardError(
+      `Scene "${scene.id}" would display ${displayed} for value ${value} at ${decimals} decimals; use more decimals or a rounded fact`,
+    );
+  }
+}
+
+function assertLineChartFact(scene: ChartScene, fact: Fact): void {
+  if (fact.dataset === undefined) {
+    throw new StoryboardError(`Scene "${scene.id}": fact "${fact.id}" has no dataset to verify the chart against`);
+  }
+  if (!deepEqual(fact.dataset, scene.props.points)) {
+    throw new StoryboardError(`Scene "${scene.id}": chart points do not match the dataset of fact "${fact.id}"`);
+  }
+  const last = scene.props.points[scene.props.points.length - 1].y;
+  const displayed = Number(formatNumber(last, scene.props.decimals).replace(/,/g, ""));
+  if (displayed !== last) {
+    throw new StoryboardError(
+      `Scene "${scene.id}" would display ${displayed} for the last value ${last} at ${scene.props.decimals} decimals; use more decimals`,
+    );
+  }
+}
+
+function assertBarRaceFact(scene: RaceScene, fact: Fact): void {
+  if (fact.dataset === undefined) {
+    throw new StoryboardError(`Scene "${scene.id}": fact "${fact.id}" has no dataset to verify the race against`);
+  }
+  if (!deepEqual(fact.dataset, scene.props.frames)) {
+    throw new StoryboardError(`Scene "${scene.id}": race frames do not match the dataset of fact "${fact.id}"`);
+  }
+  const { decimals } = scene.props;
+  for (const frame of scene.props.frames) {
+    for (const { name, value } of frame.values) {
+      const displayed = Number(formatNumber(value, decimals).replace(/,/g, ""));
+      if (displayed !== value) {
+        throw new StoryboardError(
+          `Scene "${scene.id}" would display ${displayed} for value ${value} (${name}, ${frame.label}) at ${decimals} decimals; use more decimals`,
+        );
+      }
+    }
+  }
+}
+
 export function assertFactsTraceable(sb: Storyboard, facts: Facts): void {
   const byId = new Map(facts.facts.map((fact) => [fact.id, fact]));
   for (const scene of sb.scenes) {
-    if (scene.type !== "big-number") continue;
+    if (scene.type === "title") continue;
     const fact = byId.get(scene.props.factId);
     if (!fact) {
       throw new StoryboardError(`Scene "${scene.id}" references unknown fact "${scene.props.factId}"`);
     }
-    if (fact.value === undefined) {
-      throw new StoryboardError(
-        `Scene "${scene.id}": fact "${fact.id}" has no value to verify the displayed number against`,
-      );
-    }
-    if (fact.value !== scene.props.value) {
-      throw new StoryboardError(
-        `Scene "${scene.id}" shows ${scene.props.value} but fact "${fact.id}" says ${fact.value}`,
-      );
-    }
-    const { value, decimals } = scene.props;
-    const displayed = Number(formatNumber(value, decimals).replace(/,/g, ""));
-    if (displayed !== value) {
-      throw new StoryboardError(
-        `Scene "${scene.id}" would display ${displayed} for value ${value} at ${decimals} decimals; use more decimals or a rounded fact`,
-      );
-    }
+    if (scene.type === "big-number") assertNumberFact(scene, fact);
+    else if (scene.type === "line-chart") assertLineChartFact(scene, fact);
+    else assertBarRaceFact(scene, fact);
   }
 }
 
@@ -53,7 +101,29 @@ export function assertDuration(totalMs: number): void {
   }
 }
 
-const MAX_CALLOUTS = { title: 0, "big-number": 1 } as const;
+const MAX_CALLOUTS: Record<Scene["type"], number> = {
+  title: 0,
+  "big-number": 1,
+  "line-chart": 3,
+  "bar-race": 1,
+};
+
+function assertCueAnchor(scene: Scene, cue: Scene["cues"][number]): void {
+  if (scene.type === "line-chart") {
+    if (cue.x === undefined) {
+      throw new StoryboardError(`Scene "${scene.id}" (line-chart) callout cues need an x anchor`);
+    }
+    const lo = scene.props.points[0].x;
+    const hi = scene.props.points[scene.props.points.length - 1].x;
+    if (cue.x < lo || cue.x > hi) {
+      throw new StoryboardError(
+        `Scene "${scene.id}" (line-chart) cue x ${cue.x} is outside the chart's x range ${lo}-${hi}`,
+      );
+    }
+  } else if (cue.x !== undefined) {
+    throw new StoryboardError(`Scene "${scene.id}" (${scene.type}) does not use cue x anchors`);
+  }
+}
 
 /** Rejects cues the scene would silently ignore at render time. */
 export function assertCuesSupported(sb: Storyboard): void {
@@ -71,6 +141,7 @@ export function assertCuesSupported(sb: Storyboard): void {
         `Scene "${scene.id}" (${scene.type}) supports at most ${MAX_CALLOUTS[scene.type]} callout cue; got ${callouts}`,
       );
     }
+    for (const cue of scene.cues) assertCueAnchor(scene, cue);
   }
 }
 

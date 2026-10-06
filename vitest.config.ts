@@ -8,6 +8,7 @@ export default defineConfig({
       include: [
         "src/schema/**",
         "src/pipeline/**",
+        "src/charts/**/*.ts",
         "src/design/motion.ts",
         "src/design/layout.ts",
       ],
