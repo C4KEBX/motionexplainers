@@ -49,7 +49,7 @@ describe("assertCuesSupported: no cue may be accepted and then ignored", () => {
     expect(() => assertCuesSupported(board([num({ value: 1 }, [callout, callout])]))).toThrow(/"n".*at most 1 callout/);
   });
   it("rejects emphasize cues where no scene renders them", () => {
-    const emph = { atWord: "half", do: "emphasize" };
+    const emph = { atWord: "half", do: "emphasize", text: "half" };
     expect(() => assertCuesSupported(board([num({ value: 1 }, [emph])]))).toThrow(/emphasize/);
   });
   it("rejects any cue on a title scene", () => {

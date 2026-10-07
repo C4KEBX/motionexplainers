@@ -81,8 +81,17 @@ Charts are pure functions of `(data, frame)`, built with SVG and d3 math (`d3-sc
 - Chart data must deep-equal a `dataset` on a sourced fact; the last line-chart value must display exactly at the scene's `decimals`.
 - Callouts on line charts carry an `x` data anchor and appear once both the cue word has been spoken and the line has reached `x`. Callout text is capped at 24 characters and is not traced to facts (the script/fact-check step must verify it).
 - Bar races support at most 8 distinct entities (one palette color each).
-- Camera push-in and scene-to-scene transitions are deferred to the polish plan (scaling a whole chart pushes tick labels out of the safe gutters).
+- Camera push-in and scene-to-scene transitions were deferred from Plan 2 to Plan 4 (scaling a whole chart pushes tick labels out of the safe gutters).
 - The voice step and word-splitting normalizer move to the plan that adds captions and audio finish; Plan 2 uses synthetic word timings (`fixtures/synthWords.ts`).
+
+### Plan 4 decisions
+- **Line-draw pacing:** the cursor sits on each callout's `x` on that callout's cue frame (the line speed is a monotone cubic through `(frame, progress)` knots, continuous through callouts, no overshoot). A cue spoken before the line can get there is pushed to at most start + 6 frames; callouts spoken right to left are rejected. Bar-race pacing stays proportional (no spoken anchor).
+- **Transitions:** two slanted flat bands (neutral lead, highlight lag) sweep across every cut, 14 frames centered on the cut, below the captions; scene durations and audio sync are unaffected.
+- **Dropped from v1:** the chart camera push-in (labels leave the safe gutters when a chart is scaled) and matched-element transitions; revisit once real videos show a need.
+- **Label legibility:** tick labels and bar names/values draw above the data with a ground-colored halo; a tick label is hidden while a callout badge overlaps it.
+- **`kinetic-text`:** 1-4 lines of at most 14 characters, no digits (numbers must come from facts), up to 2 `emphasize` cues whose `text` names a single on-screen word.
+- **`compare`:** two sides, each `{label, value >= 0, factId}`, each traced to its own fact with the `big-number` rules; at most one callout, on the larger side.
+- **`quote`:** quote text (max 140 chars) must appear in its fact's `claim` (curly quotes and whitespace normalized); no cues; rejected if it cannot fit the lane or cannot finish revealing before the scene exits.
 
 ### Scene library (v1)
 `line-chart`, `bar-chart` / `bar-race`, `big-number`, `kinetic-text`, `timeline`, `map` (history; free `world-atlas` data), `compare`, `quote`, `title` / `outro`. Nothing beyond this until real videos demand it.
@@ -122,7 +131,7 @@ Each milestone ends in something watchable.
 1. **Spike**: word timings from Edge TTS or Kokoro; Remotion render-time measurement on this Mac.
 2. **Foundation**: design tokens, motion primitives, schema, 10s hello-world render.
 3. **Charts first**: `line-chart`, `bar-race`, `big-number`. The animation quality bar is proven here before any breadth. **Done (Plan 2)**: animated line chart (running-max axis rescale, leading dot, count-up readout, data-anchored callouts) and bar race (eased rank swaps, top-N fade, stable colors) render in `FinanceDemo` at about 0.06 s/frame.
-4. **Text and layout scenes**: `kinetic-text`, `compare`, `quote`, scene transitions.
+4. **Text and layout scenes**: `kinetic-text`, `compare`, `quote`, scene transitions. **Done (Plan 4)**, together with narration-paced line drawing; see Plan 4 decisions.
 5. **History scenes**: `timeline`, `map`.
 6. **Audio finish**: captions, music ducking, loudness. **Done (Plan 3)**: word-by-word captions in a fixed lane (charts shrank to make room), narration from Edge TTS with a deterministic offline stand-in, a ducked music bed, two-pass loudness to -14 LUFS, and `npm run produce` end to end.
 7. **Skill**, then first real 60s videos: one finance, one investing, one history.

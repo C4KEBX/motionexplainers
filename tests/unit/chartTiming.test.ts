@@ -48,3 +48,27 @@ describe("chart scenes must be long enough to finish animating and show their ca
     expect(() => buildVideo(board(scene), facts(points), words, 30)).not.toThrow();
   });
 });
+
+describe("line-chart callout pacing is validated against the narration", () => {
+  const longPoints = [{ x: 1, y: 1 }, { x: 2, y: 5 }, { x: 3, y: 2 }];
+  const scene = (cues: unknown[]) => ({
+    id: "c", type: "line-chart",
+    narration: "Prices rose steadily and then fell sharply before settling down for the rest of the long year.",
+    props: { title: "T", points: longPoints, factId: "f1" },
+    cues,
+  });
+  it("rejects callouts spoken right to left", () => {
+    const cues = [
+      { atWord: "rose", do: "callout", text: "Up", x: 3 },
+      { atWord: "fell", do: "callout", text: "Down", x: 2 },
+    ];
+    expect(() => buildVideo(board(scene(cues)), facts(longPoints), words, 30)).toThrow(/"c".*left to right/);
+  });
+  it("accepts callouts spoken left to right", () => {
+    const cues = [
+      { atWord: "rose", do: "callout", text: "Up", x: 2 },
+      { atWord: "fell", do: "callout", text: "Down", x: 3 },
+    ];
+    expect(() => buildVideo(board(scene(cues)), facts(longPoints), words, 30)).not.toThrow();
+  });
+});

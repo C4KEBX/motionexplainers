@@ -58,3 +58,14 @@
 - The Claude Code skill: topic -> facts.json with sources -> script -> storyboard JSON (few-shot from fixtures) -> validate/repair loop -> `npm run produce` -> review sheet; human review gate before the final render.
 - Visual follow-ups still open: a callout badge can cover a y tick label and the line start can hide the "0%" tick; bar-race name labels overlap neighbouring bars mid-swap; the area fill ends in a hard edge at the cursor.
 - Known gaps carried forward: callout text, chart titles and title numbers are not traced to facts; fonts load from Google at render time; the stand-in voice is noise, not speech; `npm run produce` renders on one process (no parallel scene rendering yet).
+
+## Plan 4 results (pacing, wipes, text scenes)
+- History demo (title, kinetic-text, compare, big-number, quote; Edge voice): 626 frames, 20.9 s, -14.31 LUFS; produce took about 2 min on this Mac with a cold voice cache.
+- Finance demo re-run: the cursor reaches 2021 on the "climbed" cue frame and the badge pops with it (checked on the final mp4).
+- Eye review of goldens: kinetic lines inside the safe area, emphasis block behind dark text; compare bars share a baseline with values above and the VS badge between; quote mark renders as a glyph; wipe covers the frame exactly on the cut.
+- Render tests must run serially (`--no-file-parallelism`): five render files in parallel produced a different golden failure on each run.
+- Case-insensitive filesystem gotcha: `Wipe.tsx` collided with `wipe.ts` (TS1261); the overlay is `WipeOverlay.tsx`.
+
+## Inputs for Plan 5 (history scenes)
+- `timeline` and `map` (free `world-atlas` data).
+- Carried gaps: title headline numbers, callout text and chart titles are not traced to facts; fonts load from Google at render time; the stand-in voice is noise, not speech; `produce` renders on one process; area-fill vertical edge at the cursor left as is; bar-race pacing is proportional.

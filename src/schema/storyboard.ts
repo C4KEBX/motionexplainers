@@ -15,8 +15,8 @@ export const CueSchema = z.strictObject({
   do: z.enum(["callout", "emphasize"]),
   text: z.string().min(1).max(24).optional(),
   x: z.number().optional(),
-}).refine((cue) => cue.do !== "callout" || cue.text !== undefined, {
-  message: "a callout cue requires text",
+}).refine((cue) => cue.text !== undefined, {
+  message: "a callout or emphasize cue requires text",
   path: ["text"],
 });
 
@@ -139,11 +139,58 @@ const BarRaceSceneSchema = z.strictObject({
     }),
 });
 
+const KineticTextSceneSchema = z.strictObject({
+  ...sceneBase,
+  type: z.literal("kinetic-text"),
+  props: z.strictObject({
+    lines: z.array(z.string().min(1).max(14)).min(1).max(4),
+    tone: z.enum(TONES).default("highlight"),
+  }),
+});
+
+const CompareSideSchema = z.strictObject({
+  label: z.string().min(1).max(14),
+  value: z.number().min(0),
+  factId: z.string().min(1),
+});
+
+const CompareSceneSchema = z.strictObject({
+  ...sceneBase,
+  type: z.literal("compare"),
+  props: z
+    .strictObject({
+      title: z.string().min(1).max(32),
+      left: CompareSideSchema,
+      right: CompareSideSchema,
+      prefix: z.string().max(4).default(""),
+      suffix: z.string().max(6).default(""),
+      decimals: z.number().int().min(0).max(4).default(0),
+    })
+    .superRefine((props, ctx) => {
+      if (props.left.value <= 0 && props.right.value <= 0) {
+        ctx.addIssue({ code: "custom", path: ["left", "value"], message: "at least one side must be greater than zero" });
+      }
+    }),
+});
+
+const QuoteSceneSchema = z.strictObject({
+  ...sceneBase,
+  type: z.literal("quote"),
+  props: z.strictObject({
+    quote: z.string().min(1).max(140),
+    attribution: z.string().min(1).max(40),
+    factId: z.string().min(1),
+  }),
+});
+
 const SceneSchema = z.discriminatedUnion("type", [
   TitleSceneSchema,
   BigNumberSceneSchema,
   LineChartSceneSchema,
   BarRaceSceneSchema,
+  KineticTextSceneSchema,
+  CompareSceneSchema,
+  QuoteSceneSchema,
 ]);
 
 export const StoryboardSchema = z
@@ -176,6 +223,9 @@ export type Scene = Storyboard["scenes"][number];
 export type TitleProps = Extract<Scene, { type: "title" }>["props"];
 export type BigNumberProps = Extract<Scene, { type: "big-number" }>["props"];
 export type LineChartProps = Extract<Scene, { type: "line-chart" }>["props"];
+export type KineticTextProps = Extract<Scene, { type: "kinetic-text" }>["props"];
+export type CompareProps = Extract<Scene, { type: "compare" }>["props"];
+export type QuoteProps = Extract<Scene, { type: "quote" }>["props"];
 export type BarRaceProps = Extract<Scene, { type: "bar-race" }>["props"];
 
 export function parseStoryboard(input: unknown): Storyboard {

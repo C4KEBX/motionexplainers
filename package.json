@@ -5,7 +5,7 @@
   "scripts": {
     "test": "vitest run tests/unit",
     "test:cov": "vitest run tests/unit --coverage",
-    "test:render": "vitest run tests/render --testTimeout=240000",
+    "test:render": "vitest run tests/render --testTimeout=240000 --no-file-parallelism",
     "typecheck": "tsc --noEmit",
     "studio": "remotion studio src/index.ts",
     "bench": "rm -rf out/stress-frames && remotion render src/index.ts RenderStress out/stress-frames --sequence --image-format=jpeg",

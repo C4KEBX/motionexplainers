@@ -6,8 +6,13 @@ import type { ComposedScene } from "../pipeline/resolveScene";
 import { BigNumber } from "../scenes/big-number/BigNumber";
 import { BarRace } from "../scenes/bar-race/BarRace";
 import { LineChart } from "../scenes/line-chart/LineChart";
+import { Compare } from "../scenes/compare/Compare";
+import { KineticText } from "../scenes/kinetic-text/KineticText";
+import { Quote } from "../scenes/quote/Quote";
 import { Title } from "../scenes/title/Title";
 import { PALETTE } from "../design/tokens";
+import { WipeOverlay } from "./WipeOverlay";
+import { cutFrames } from "./wipe";
 
 const SceneSwitch: React.FC<{ composed: ComposedScene }> = ({ composed }) => {
   const { scene, cues, durationFrames } = composed;
@@ -20,6 +25,12 @@ const SceneSwitch: React.FC<{ composed: ComposedScene }> = ({ composed }) => {
       return <LineChart props={scene.props} cues={cues} durationFrames={durationFrames} />;
     case "bar-race":
       return <BarRace props={scene.props} cues={cues} durationFrames={durationFrames} />;
+    case "kinetic-text":
+      return <KineticText props={scene.props} cues={cues} durationFrames={durationFrames} />;
+    case "compare":
+      return <Compare props={scene.props} cues={cues} durationFrames={durationFrames} />;
+    case "quote":
+      return <Quote props={scene.props} cues={cues} durationFrames={durationFrames} />;
     default: {
       const unreachable: never = scene;
       throw new Error(`Unhandled scene type: ${JSON.stringify(unreachable)}`);
@@ -39,6 +50,7 @@ export const Video: React.FC<{ scenes: ComposedScene[]; captions: CaptionChunk[]
         </Series.Sequence>
       ))}
     </Series>
+    <WipeOverlay cuts={cutFrames(scenes)} />
     <Captions chunks={captions} />
   </AbsoluteFill>
 );

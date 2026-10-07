@@ -25,3 +25,19 @@ describe("caption lane", () => {
     expect(SAFE.top + TITLE_LANE.height + 140).toBeLessThanOrEqual(CAPTION_LANE.top);
   });
 });
+
+describe("kinetic lane", () => {
+  it("spans the side gutters and stops above the caption lane", async () => {
+    const { KINETIC_LANE } = await import("../../src/design/tokens");
+    expect(KINETIC_LANE.width).toBe(VIDEO.width - 2 * SAFE.side);
+    expect(SAFE.top + KINETIC_LANE.height + 120).toBe(CAPTION_LANE.top);
+  });
+});
+
+describe("quote lane", () => {
+  it("is the title lane minus room for the mark and attribution", async () => {
+    const { QUOTE_LANE } = await import("../../src/design/tokens");
+    expect(QUOTE_LANE.height).toBe(TITLE_LANE.height - 360);
+    expect(QUOTE_LANE.width).toBe(TITLE_LANE.width);
+  });
+});

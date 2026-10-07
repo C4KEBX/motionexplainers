@@ -7,11 +7,13 @@ import {
   cursorX, decimalsForStep, niceTicks, pointOnPathAtX, valueAtX, yDomainAt,
   type DataPoint, type Domain,
 } from "../../charts/geometry";
+import { TICK_FONT_PX, badgeRect, overlaps, tickLabelRect } from "../../charts/labels";
 import { CHART_BOX, placeBadge, readoutFontSize } from "../../charts/layout";
-import { EXIT_FRAMES, LINE_DRAW, calloutAppearFrame, lineDrawFrames } from "../../charts/timing";
+import { scheduleProgress } from "../../charts/schedule";
+import { EXIT_FRAMES, LINE_DRAW, drawPlan } from "../../charts/timing";
 import { BODY_FONT, DISPLAY_FONT } from "../../design/fonts";
 import { formatNumber } from "../../design/layout";
-import { dataProgress, popIn, staggerDelay, sustainDrift } from "../../design/motion";
+import { popIn, staggerDelay, sustainDrift } from "../../design/motion";
 import { PALETTE, SAFE, VIDEO } from "../../design/tokens";
 import type { LineChartProps } from "../../schema/storyboard";
 import type { SceneRenderProps } from "../types";
@@ -24,7 +26,13 @@ export const LineChart: React.FC<SceneRenderProps<LineChartProps>> = ({ props, c
   const tone = PALETTE[props.tone];
   const { points } = props;
 
-  const progress = dataProgress(frame, LINE_DRAW.start, lineDrawFrames(durationFrames));
+  const calloutCues = cues.filter((c) => c.do === "callout" && c.text !== undefined && c.x !== undefined);
+  const plan = drawPlan(
+    calloutCues.map((c) => ({ frame: c.frame, x: c.x as number })),
+    points,
+    durationFrames,
+  );
+  const progress = scheduleProgress(frame, plan.knots);
   const cx = cursorX(points, progress);
   const xDomain: Domain = [points[0].x, points[points.length - 1].x];
   const yDomain = yDomainAt(points, progress, props.baseline);
@@ -54,6 +62,14 @@ export const LineChart: React.FC<SceneRenderProps<LineChartProps>> = ({ props, c
   const xTickDecimals =
     props.xFormat === "year" ? 0 : decimalsForStep(rawXTicks.length > 1 ? rawXTicks[1] - rawXTicks[0] : 1);
   const xLabel = (t: number) => (props.xFormat === "year" ? String(t) : formatNumber(t, xTickDecimals));
+
+  const callouts = calloutCues.map((c, i) => {
+    const ax = sx(c.x as number);
+    const ay = sy(valueAtX(points, c.x as number));
+    return { c, appear: plan.appear[i], ax, ay, badge: placeBadge(ax, ay, c.text as string) };
+  });
+  const shown = callouts.filter((k) => frame >= k.appear);
+  const covered = shown.map((k) => badgeRect(k.badge));
 
   const titleIn = Math.min(1, popIn(frame, fps, 0));
   const dotIn = Math.min(1, popIn(frame, fps, LINE_DRAW.start));
@@ -95,12 +111,10 @@ export const LineChart: React.FC<SceneRenderProps<LineChartProps>> = ({ props, c
           const fade =
             Math.min(1, Math.max(0, (y - CHART_BOX.top) / 60)) * Math.min(1, popIn(frame, fps, staggerDelay(i, 3)));
           return (
-            <g key={t} opacity={fade}>
-              <line x1={CHART_BOX.left} x2={CHART_BOX.right} y1={y} y2={y} stroke={PALETTE.ink} strokeOpacity={0.14} strokeWidth={3} />
-              <text x={CHART_BOX.left} y={y - 12} fontFamily={BODY_FONT} fontSize={38} fill={PALETTE.ink} fillOpacity={0.55}>
-                {fmt(t, yTickDecimals)}
-              </text>
-            </g>
+            <line
+              key={t} x1={CHART_BOX.left} x2={CHART_BOX.right} y1={y} y2={y} opacity={fade}
+              stroke={PALETTE.ink} strokeOpacity={0.14} strokeWidth={3}
+            />
           );
         })}
         <line
@@ -127,27 +141,35 @@ export const LineChart: React.FC<SceneRenderProps<LineChartProps>> = ({ props, c
           <path d={linePath} fill="none" stroke={tone} strokeWidth={LINE_WIDTH} strokeLinecap="round" strokeLinejoin="round" />
         </g>
 
+        {yTicks.map((t, i) => {
+          const y = sy(t);
+          const text = fmt(t, yTickDecimals);
+          if (covered.some((r) => overlaps(r, tickLabelRect(y, text)))) return null;
+          const fade =
+            Math.min(1, Math.max(0, (y - CHART_BOX.top) / 60)) * Math.min(1, popIn(frame, fps, staggerDelay(i, 3)));
+          return (
+            <text
+              key={t} x={CHART_BOX.left} y={y - 12} opacity={fade}
+              fontFamily={BODY_FONT} fontSize={TICK_FONT_PX} fill={PALETTE.ink} fillOpacity={0.55}
+              stroke={PALETTE.ground} strokeWidth={10} paintOrder="stroke" strokeLinejoin="round"
+            >
+              {text}
+            </text>
+          );
+        })}
+
         <g transform={`translate(${tip.x} ${tip.y})`} opacity={dotIn}>
           <circle r={40 + sustainDrift(frame, 8, 30)} fill="none" stroke={tone} strokeWidth={8} strokeOpacity={0.5} />
           <circle r={24} fill={PALETTE.ink} />
           <circle r={11} fill={tone} />
         </g>
 
-        {cues
-          .filter((c) => c.do === "callout" && c.text !== undefined && c.x !== undefined)
-          .map((c) => {
-            const anchorXValue = c.x as number;
-            const appear = calloutAppearFrame(c.frame, anchorXValue, points, durationFrames);
-            if (frame < appear) return null;
-            const ax = sx(anchorXValue);
-            const ay = sy(valueAtX(points, anchorXValue));
-            return (
-              <CalloutBadge
-                key={`${c.frame}-${c.x}`} badge={placeBadge(ax, ay, c.text as string)} text={c.text as string}
-                anchorX={ax} anchorY={ay} scale={popIn(frame, fps, appear)} color={tone}
-              />
-            );
-          })}
+        {shown.map(({ c, appear, ax, ay, badge }) => (
+          <CalloutBadge
+            key={`${c.frame}-${c.x}`} badge={badge} text={c.text as string}
+            anchorX={ax} anchorY={ay} scale={popIn(frame, fps, appear)} color={tone}
+          />
+        ))}
       </svg>
     </AbsoluteFill>
   );

@@ -6,9 +6,10 @@ import {
   assertCuesSupported,
   assertFactsTraceable,
   assertHeadlinesFit,
+  assertTextScenes,
   assertVariety,
 } from "../schema/validate";
-import { assertChartTiming } from "./assertChartTiming";
+import { assertSceneTiming } from "./assertSceneTiming";
 import { composeScenes, type ComposedScene } from "./resolveScene";
 
 export type BuiltVideo = {
@@ -30,9 +31,10 @@ export function buildVideo(
   assertVariety(storyboard);
   assertCuesSupported(storyboard);
   assertHeadlinesFit(storyboard);
+  assertTextScenes(storyboard);
   assertFactsTraceable(storyboard, parseFacts(factsJson));
   const scenes = composeScenes(storyboard, wordsFor(storyboard), fps, audioMsByScene);
-  assertChartTiming(scenes);
+  assertSceneTiming(scenes);
   const totalFrames = scenes.reduce((sum, scene) => sum + scene.durationFrames, 0);
   return { storyboard, scenes, captions: buildCaptions(scenes, fps), totalFrames };
 }

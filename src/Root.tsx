@@ -2,6 +2,8 @@ import React from "react";
 import { Composition } from "remotion";
 import financeFacts from "../fixtures/finance.facts.json";
 import financeStoryboard from "../fixtures/finance.storyboard.json";
+import historyFacts from "../fixtures/history.facts.json";
+import historyStoryboard from "../fixtures/history.storyboard.json";
 import facts from "../fixtures/hello.facts.json";
 import storyboardJson from "../fixtures/hello.storyboard.json";
 import words from "../fixtures/hello.words.json";
@@ -15,6 +17,13 @@ const hello = buildVideo(storyboardJson, facts, () => words, VIDEO.fps);
 const finance = buildVideo(
   financeStoryboard,
   financeFacts,
+  (sb) => Object.fromEntries(sb.scenes.map((s) => [s.id, synthWords(s.narration)])),
+  VIDEO.fps,
+);
+
+const history = buildVideo(
+  historyStoryboard,
+  historyFacts,
   (sb) => Object.fromEntries(sb.scenes.map((s) => [s.id, synthWords(s.narration)])),
   VIDEO.fps,
 );
@@ -38,6 +47,15 @@ export const RemotionRoot: React.FC = () => (
       width={VIDEO.width}
       height={VIDEO.height}
       defaultProps={{ scenes: finance.scenes, captions: finance.captions }}
+    />
+    <Composition
+      id="HistoryDemo"
+      component={Video}
+      durationInFrames={history.totalFrames}
+      fps={VIDEO.fps}
+      width={VIDEO.width}
+      height={VIDEO.height}
+      defaultProps={{ scenes: history.scenes, captions: history.captions }}
     />
     <Composition
       id="Production"

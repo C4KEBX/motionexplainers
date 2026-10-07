@@ -32,9 +32,3 @@ export function easeInOutCubic(t: number): number {
   const x = clamp01(t);
   return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 }
-
-/** The frame at which `dataProgress(frame, start, duration)` reaches `targetProgress`. */
-export function dataFrameAt(targetProgress: number, startFrame: number, durationFrames: number): number {
-  if (durationFrames <= 0) throw new RangeError("durationFrames must be positive");
-  return startFrame + durationFrames * (1 - Math.cbrt(1 - clamp01(targetProgress)));
-}

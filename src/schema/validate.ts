@@ -1,7 +1,8 @@
 import { fitTitleFontSize, formatNumber } from "../design/layout";
-import { TITLE_LANE } from "../design/tokens";
+import { QUOTE_LANE, TITLE_LANE } from "../design/tokens";
 import type { Facts } from "./facts";
 import { deepEqual } from "./deepEqual";
+import { emphasisTarget } from "./emphasis";
 import { StoryboardError, type Scene, type Storyboard } from "./storyboard";
 
 export const MIN_VIDEO_MS = 55_000;
@@ -18,27 +19,21 @@ export function assertVariety(sb: Storyboard): void {
   }
 }
 
-type NumberScene = Extract<Scene, { type: "big-number" }>;
 type ChartScene = Extract<Scene, { type: "line-chart" }>;
 type RaceScene = Extract<Scene, { type: "bar-race" }>;
 type Fact = Facts["facts"][number];
 
-function assertNumberFact(scene: NumberScene, fact: Fact): void {
+function assertNumberFact(sceneId: string, shown: { value: number; decimals: number }, fact: Fact): void {
   if (fact.value === undefined) {
-    throw new StoryboardError(
-      `Scene "${scene.id}": fact "${fact.id}" has no value to verify the displayed number against`,
-    );
+    throw new StoryboardError(`Scene "${sceneId}": fact "${fact.id}" has no value to verify the displayed number against`);
   }
-  if (fact.value !== scene.props.value) {
-    throw new StoryboardError(
-      `Scene "${scene.id}" shows ${scene.props.value} but fact "${fact.id}" says ${fact.value}`,
-    );
+  if (fact.value !== shown.value) {
+    throw new StoryboardError(`Scene "${sceneId}" shows ${shown.value} but fact "${fact.id}" says ${fact.value}`);
   }
-  const { value, decimals } = scene.props;
-  const displayed = Number(formatNumber(value, decimals).replace(/,/g, ""));
-  if (displayed !== value) {
+  const displayed = Number(formatNumber(shown.value, shown.decimals).replace(/,/g, ""));
+  if (displayed !== shown.value) {
     throw new StoryboardError(
-      `Scene "${scene.id}" would display ${displayed} for value ${value} at ${decimals} decimals; use more decimals or a rounded fact`,
+      `Scene "${sceneId}" would display ${displayed} for value ${shown.value} at ${shown.decimals} decimals; use more decimals or a rounded fact`,
     );
   }
 }
@@ -79,17 +74,49 @@ function assertBarRaceFact(scene: RaceScene, fact: Fact): void {
   }
 }
 
+const normalizeQuote = (s: string): string =>
+  s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/\s+/g, " ").trim();
+
 export function assertFactsTraceable(sb: Storyboard, facts: Facts): void {
   const byId = new Map(facts.facts.map((fact) => [fact.id, fact]));
+  const lookup = (sceneId: string, factId: string): Fact => {
+    const fact = byId.get(factId);
+    if (!fact) throw new StoryboardError(`Scene "${sceneId}" references unknown fact "${factId}"`);
+    return fact;
+  };
   for (const scene of sb.scenes) {
-    if (scene.type === "title") continue;
-    const fact = byId.get(scene.props.factId);
-    if (!fact) {
-      throw new StoryboardError(`Scene "${scene.id}" references unknown fact "${scene.props.factId}"`);
+    switch (scene.type) {
+      case "title":
+      case "kinetic-text":
+        break;
+      case "big-number":
+        assertNumberFact(scene.id, scene.props, lookup(scene.id, scene.props.factId));
+        break;
+      case "compare":
+        for (const side of [scene.props.left, scene.props.right]) {
+          assertNumberFact(scene.id, { value: side.value, decimals: scene.props.decimals }, lookup(scene.id, side.factId));
+        }
+        break;
+      case "quote": {
+        const fact = lookup(scene.id, scene.props.factId);
+        if (!normalizeQuote(fact.claim).includes(normalizeQuote(scene.props.quote))) {
+          throw new StoryboardError(
+            `Scene "${scene.id}": the quote does not appear in the claim of fact "${fact.id}"; the on-screen wording must match the source`,
+          );
+        }
+        break;
+      }
+      case "line-chart":
+        assertLineChartFact(scene, lookup(scene.id, scene.props.factId));
+        break;
+      case "bar-race":
+        assertBarRaceFact(scene, lookup(scene.id, scene.props.factId));
+        break;
+      default: {
+        const unreachable: never = scene;
+        throw new Error(`Unhandled scene type: ${JSON.stringify(unreachable)}`);
+      }
     }
-    if (scene.type === "big-number") assertNumberFact(scene, fact);
-    else if (scene.type === "line-chart") assertLineChartFact(scene, fact);
-    else assertBarRaceFact(scene, fact);
   }
 }
 
@@ -106,6 +133,9 @@ const MAX_CALLOUTS: Record<Scene["type"], number> = {
   "big-number": 1,
   "line-chart": 3,
   "bar-race": 1,
+  "kinetic-text": 0,
+  compare: 1,
+  quote: 0,
 };
 
 function assertCueAnchor(scene: Scene, cue: Scene["cues"][number]): void {
@@ -125,16 +155,35 @@ function assertCueAnchor(scene: Scene, cue: Scene["cues"][number]): void {
   }
 }
 
+const NO_CUES: ReadonlySet<Scene["type"]> = new Set(["title", "quote"]);
+const MAX_EMPHASIS = 2;
+
+function assertEmphasis(scene: Extract<Scene, { type: "kinetic-text" }>, cues: Scene["cues"]): void {
+  if (cues.length > MAX_EMPHASIS) {
+    throw new StoryboardError(`Scene "${scene.id}" (kinetic-text) supports at most ${MAX_EMPHASIS} emphasize cues; got ${cues.length}`);
+  }
+  for (const cue of cues) {
+    const text = cue.text as string;
+    if (/\s/.test(text.trim())) {
+      throw new StoryboardError(`Scene "${scene.id}": emphasize cue "${text}" must name a single word`);
+    }
+    if (emphasisTarget(scene.props.lines, text) === null) {
+      throw new StoryboardError(`Scene "${scene.id}": emphasize cue "${text}" is not a word on screen`);
+    }
+  }
+}
+
 /** Rejects cues the scene would silently ignore at render time. */
 export function assertCuesSupported(sb: Storyboard): void {
   for (const scene of sb.scenes) {
-    if (scene.type === "title" && scene.cues.length > 0) {
-      throw new StoryboardError(`Scene "${scene.id}" (title) does not support cues`);
+    if (NO_CUES.has(scene.type) && scene.cues.length > 0) {
+      throw new StoryboardError(`Scene "${scene.id}" (${scene.type}) does not support cues`);
     }
-    const emphasize = scene.cues.find((cue) => cue.do === "emphasize");
-    if (emphasize) {
+    const emphasize = scene.cues.filter((cue) => cue.do === "emphasize");
+    if (scene.type !== "kinetic-text" && emphasize.length > 0) {
       throw new StoryboardError(`Scene "${scene.id}" (${scene.type}) cannot render "emphasize" cues`);
     }
+    if (scene.type === "kinetic-text") assertEmphasis(scene, emphasize);
     const callouts = scene.cues.filter((cue) => cue.do === "callout").length;
     if (callouts > MAX_CALLOUTS[scene.type]) {
       throw new StoryboardError(
@@ -157,6 +206,23 @@ export function assertHeadlinesFit(sb: Storyboard): void {
         throw new StoryboardError(`Scene "${scene.id}" headline does not fit: ${error.message}`);
       }
       throw error;
+    }
+  }
+}
+
+/** Content rules for text scenes. Numbers must reach the screen through facts, so lines carry none. */
+export function assertTextScenes(sb: Storyboard): void {
+  for (const scene of sb.scenes) {
+    if (scene.type === "kinetic-text" && scene.props.lines.some((line) => /\d/.test(line))) {
+      throw new StoryboardError(`Scene "${scene.id}" (kinetic-text) shows a digit; spell it out or use a big-number scene tied to a fact`);
+    }
+    if (scene.type === "quote") {
+      try {
+        fitTitleFontSize(scene.props.quote, QUOTE_LANE.width, QUOTE_LANE.height, QUOTE_LANE.maxFont);
+      } catch (error) {
+        if (error instanceof RangeError) throw new StoryboardError(`Scene "${scene.id}": the quote does not fit: ${error.message}`);
+        throw error;
+      }
     }
   }
 }

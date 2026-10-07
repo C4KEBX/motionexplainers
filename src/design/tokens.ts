@@ -30,3 +30,17 @@ export const TITLE_LANE = {
 export const CATEGORICAL = [
   "#ffd23f", "#7c8cff", "#ff9f5a", "#5ad1ff", "#c78bff", "#9be564", "#ff7ab6", "#8fa3b8",
 ] as const;
+
+/** Space for stacked kinetic lines: safe top to the caption lane, minus breathing room. */
+export const KINETIC_LANE = {
+  width: VIDEO.width - 2 * SAFE.side,
+  height: CAPTION_LANE.top - SAFE.top - 120,
+  maxFont: 190,
+} as const;
+
+/** Quote text lane: the title lane minus room for the big quote mark above and the attribution below. */
+export const QUOTE_LANE = {
+  width: TITLE_LANE.width,
+  height: TITLE_LANE.height - 360,
+  maxFont: 120,
+} as const;

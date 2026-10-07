@@ -80,15 +80,23 @@ export const BarRace: React.FC<SceneRenderProps<BarRaceProps>> = ({ props, cues,
           const color = CATEGORICAL[bar.colorIndex % CATEGORICAL.length];
           return (
             <g key={bar.name} opacity={bar.opacity} transform={`translate(${CHART_BOX.left} ${BARS_TOP + bar.rank * pitch})`}>
-              <text y={30} fontFamily={BODY_FONT} fontSize={38} fill={PALETTE.ink}>
-                {bar.name}
-              </text>
               <rect x={8} y={NAME_ROW + 8} width={w} height={barH} fill={PALETTE.ink} fillOpacity={0.16} />
               <rect y={NAME_ROW} width={w} height={barH} fill={color} />
+            </g>
+          );
+        })}
+        {state.bars.map((bar) => {
+          const w = Math.max(0, (bar.value / state.axisMax) * MAX_BAR_WIDTH * grow);
+          const halo = { stroke: PALETTE.ground, strokeWidth: 10, paintOrder: "stroke", strokeLinejoin: "round" } as const;
+          return (
+            <g key={`${bar.name}-label`} opacity={bar.opacity} transform={`translate(${CHART_BOX.left} ${BARS_TOP + bar.rank * pitch})`}>
+              <text y={30} fontFamily={BODY_FONT} fontSize={38} fill={PALETTE.ink} {...halo}>
+                {bar.name}
+              </text>
               {bar.present >= 0.999 && (
                 <text
                   x={w + 16} y={NAME_ROW + barH * 0.68}
-                  fontFamily={DISPLAY_FONT} fontSize={valueFont} fill={PALETTE.ink}
+                  fontFamily={DISPLAY_FONT} fontSize={valueFont} fill={PALETTE.ink} {...halo}
                   style={{ fontVariantNumeric: "tabular-nums" }}
                 >
                   {fmt(bar.value)}
