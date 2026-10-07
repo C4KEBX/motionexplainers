@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { synthWords } from "../../fixtures/synthWords";
+import { synthWords } from "../../src/voice/standin";
 import { buildVideo } from "../../src/pipeline/buildVideo";
 import { StoryboardError } from "../../src/schema/storyboard";
 

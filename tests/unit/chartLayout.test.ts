@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { BADGE, CHART_BOX, badgeWidth, placeBadge } from "../../src/charts/layout";
+import { CAPTION_LANE } from "../../src/design/tokens";
 
 describe("CHART_BOX", () => {
   it("sits inside the side gutters and above the bottom safe zone", () => {
     expect(CHART_BOX.left).toBe(60);
     expect(CHART_BOX.right).toBe(1020);
-    expect(CHART_BOX.bottom + 80).toBeLessThanOrEqual(1920 - 384);
+    expect(CHART_BOX.bottom + 80).toBeLessThanOrEqual(CAPTION_LANE.top);
   });
 });
 

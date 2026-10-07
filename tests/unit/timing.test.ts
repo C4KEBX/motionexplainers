@@ -19,7 +19,7 @@ describe("normalizeWord", () => {
   it("lowercases and strips punctuation and symbols", () => {
     expect(normalizeWord("S&P")).toBe("sp");
     expect(normalizeWord("57%")).toBe("57");
-    expect(normalizeWord("$1.5")).toBe("15");
+    expect(normalizeWord("$1.5")).toBe("1.5");
     expect(normalizeWord("value.")).toBe("value");
   });
   it("keeps non-ASCII letters", () => {

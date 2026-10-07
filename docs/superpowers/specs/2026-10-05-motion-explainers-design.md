@@ -96,13 +96,15 @@ Synced visuals require word-level timestamps.
 
 - First choice: **Edge TTS** (free, no key) if word boundaries are usable.
 - Fallback: **Kokoro** (local, free) plus **whisper.cpp** forced alignment.
-- **Spike result (2026-10-06, see `spikes/RESULTS.md`)**: Edge TTS `WordBoundary` works and is accurate for plain words, but any phrase containing digits is merged into a single event (e.g. "$1.5 trillion to $700 billion"). Decision: use Edge TTS and add a normalizer that splits merged events per token (duration distributed by character length). If cue accuracy on numbers proves too coarse, fall back to spoken-form pre-normalization or whisper.cpp alignment. The schema is unaffected.
+- **Spike result (2026-10-06, see `spikes/RESULTS.md`)**: Edge TTS `WordBoundary` works and is accurate for plain words, but any phrase containing digits is merged into a single event (e.g. "$1.5 trillion to $700 billion"). Decision: use Edge TTS and add a normalizer that splits merged events per token (duration distributed by character length). If cue accuracy on numbers proves too coarse, fall back to spoken-form pre-normalization or whisper.cpp alignment. The schema is unaffected. **Implemented in Plan 3** (`src/voice/align.ts`, split by spoken weight; verified live against Edge on a sentence with merged digit phrases).
 
 Captions render inside Remotion (`@remotion/captions`), share the design tokens, animate word by word with the active word highlighted, and sit in the safe-zone lane.
 
 ## 6. Audio finish
 
-ffmpeg: music bed ducked under narration, loudness-normalized to -14 LUFS. Music comes from a small bundled royalty-free library with each track's license recorded. No API needed.
+Music is either generated (`audio.music: "ambient"`, an original drone bed, no license to track) or a user-supplied file in `music/`; no third-party tracks are bundled. Mixing is system ffmpeg only (Remotion's bundled ffmpeg does not run on macOS 12).
+
+ffmpeg: music bed ducked under narration, loudness-normalized to -14 LUFS. No music API is needed.
 
 ## 7. Claude Code skill (`skill/`)
 
@@ -122,7 +124,7 @@ Each milestone ends in something watchable.
 3. **Charts first**: `line-chart`, `bar-race`, `big-number`. The animation quality bar is proven here before any breadth. **Done (Plan 2)**: animated line chart (running-max axis rescale, leading dot, count-up readout, data-anchored callouts) and bar race (eased rank swaps, top-N fade, stable colors) render in `FinanceDemo` at about 0.06 s/frame.
 4. **Text and layout scenes**: `kinetic-text`, `compare`, `quote`, scene transitions.
 5. **History scenes**: `timeline`, `map`.
-6. **Audio finish**: captions, music ducking, loudness.
+6. **Audio finish**: captions, music ducking, loudness. **Done (Plan 3)**: word-by-word captions in a fixed lane (charts shrank to make room), narration from Edge TTS with a deterministic offline stand-in, a ducked music bed, two-pass loudness to -14 LUFS, and `npm run produce` end to end.
 7. **Skill**, then first real 60s videos: one finance, one investing, one history.
 
 ## 9. Project structure

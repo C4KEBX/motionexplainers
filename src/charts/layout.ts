@@ -5,7 +5,7 @@ export const CHART_BOX = {
   left: SAFE.side,
   right: VIDEO.width - SAFE.side,
   top: 640,
-  bottom: 1400,
+  bottom: 1250,
 } as const;
 
 /** Callout badge metrics. charPx matches the display face at fontPx (about 0.75em per char). */

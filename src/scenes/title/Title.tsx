@@ -3,7 +3,7 @@ import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remo
 import { BODY_FONT, DISPLAY_FONT } from "../../design/fonts";
 import { fitTitleFontSize } from "../../design/layout";
 import { popIn, staggerDelay, sustainDrift } from "../../design/motion";
-import { PALETTE, SAFE, TITLE_LANE } from "../../design/tokens";
+import { CAPTION_LANE, PALETTE, SAFE, TITLE_LANE, VIDEO } from "../../design/tokens";
 import { TITLE_MAX_FONT_PX } from "../../schema/validate";
 import type { TitleProps } from "../../schema/storyboard";
 import type { SceneRenderProps } from "../types";
@@ -26,7 +26,7 @@ export const Title: React.FC<SceneRenderProps<TitleProps>> = ({ props, durationF
         background: PALETTE.ground,
         opacity: exit,
         justifyContent: "center",
-        padding: `${SAFE.top}px ${SAFE.side}px ${SAFE.bottom}px`,
+        padding: `${SAFE.top}px ${SAFE.side}px ${VIDEO.height - CAPTION_LANE.top}px`,
       }}
     >
       {props.kicker && (

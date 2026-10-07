@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { synthWords } from "../../fixtures/synthWords";
+import { synthWords } from "../../src/voice/standin";
 
 describe("synthWords (stand-in for TTS word timings)", () => {
   it("returns one ordered, finite timing per whitespace-separated token", () => {

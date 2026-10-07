@@ -6,3 +6,5 @@ spikes/out/
 tests/render/_tmp/
 .superpowers/
 .DS_Store
+tts/.venv/
+music/generated/

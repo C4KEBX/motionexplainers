@@ -7,12 +7,12 @@ import { EXIT_FRAMES, RACE_RUN, raceRunFrames } from "../../charts/timing";
 import { BODY_FONT, DISPLAY_FONT } from "../../design/fonts";
 import { fitFontSize, formatNumber } from "../../design/layout";
 import { dataProgress, popIn } from "../../design/motion";
-import { CATEGORICAL, PALETTE, SAFE, VIDEO } from "../../design/tokens";
+import { CAPTION_LANE, CATEGORICAL, PALETTE, SAFE, VIDEO } from "../../design/tokens";
 import type { BarRaceProps } from "../../schema/storyboard";
 import type { SceneRenderProps } from "../types";
 
 const BARS_TOP = 640;
-const BARS_BOTTOM = VIDEO.height - SAFE.bottom;
+const BARS_BOTTOM = CAPTION_LANE.top - 24;
 const MAX_PITCH = 170;
 const NAME_ROW = 36;
 const VALUE_ROOM = 300;

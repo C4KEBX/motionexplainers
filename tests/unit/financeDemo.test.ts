@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import facts from "../../fixtures/finance.facts.json";
 import storyboard from "../../fixtures/finance.storyboard.json";
-import { synthWords } from "../../fixtures/synthWords";
+import { synthWords } from "../../src/voice/standin";
 import { buildVideo } from "../../src/pipeline/buildVideo";
 
 const build = () =>

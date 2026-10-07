@@ -5,7 +5,7 @@ import financeStoryboard from "../fixtures/finance.storyboard.json";
 import facts from "../fixtures/hello.facts.json";
 import storyboardJson from "../fixtures/hello.storyboard.json";
 import words from "../fixtures/hello.words.json";
-import { synthWords } from "../fixtures/synthWords";
+import { synthWords } from "./voice/synthWords";
 import { Video } from "./compose/Video";
 import { VIDEO } from "./design/tokens";
 import { buildVideo } from "./pipeline/buildVideo";
@@ -28,7 +28,7 @@ export const RemotionRoot: React.FC = () => (
       fps={VIDEO.fps}
       width={VIDEO.width}
       height={VIDEO.height}
-      defaultProps={{ scenes: hello.scenes }}
+      defaultProps={{ scenes: hello.scenes, captions: hello.captions }}
     />
     <Composition
       id="FinanceDemo"
@@ -37,7 +37,17 @@ export const RemotionRoot: React.FC = () => (
       fps={VIDEO.fps}
       width={VIDEO.width}
       height={VIDEO.height}
-      defaultProps={{ scenes: finance.scenes }}
+      defaultProps={{ scenes: finance.scenes, captions: finance.captions }}
+    />
+    <Composition
+      id="Production"
+      component={Video}
+      durationInFrames={1}
+      fps={VIDEO.fps}
+      width={VIDEO.width}
+      height={VIDEO.height}
+      defaultProps={{ scenes: [], captions: [], totalFrames: 1 }}
+      calculateMetadata={({ props }) => ({ durationInFrames: Math.max(1, props.totalFrames ?? 1) })}
     />
     <Composition
       id="RenderStress"

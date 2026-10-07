@@ -1,9 +1,9 @@
-import type { WordTiming } from "../src/schema/timing";
+import type { WordTiming } from "../schema/timing";
 
 /**
  * Synthetic word timings: a deterministic stand-in for TTS output so cues and scene durations can
  * be exercised without a voice. Each word lasts baseMs + msPerChar * length, separated by gapMs.
- * Replaced by the real voice step (and its number-splitting normalizer) in a later plan.
+ * Stand-in for the real voice step; used by the offline provider and by tests.
  */
 export function synthWords(narration: string, msPerChar = 55, baseMs = 90, gapMs = 40): WordTiming[] {
   const tokens = narration.split(/\s+/).filter(Boolean);

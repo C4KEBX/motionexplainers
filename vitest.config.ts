@@ -3,15 +3,20 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
+    testTimeout: 30000, // real-ffmpeg tests take seconds, longer when the suite runs in parallel
     coverage: {
       provider: "v8",
       include: [
         "src/schema/**",
         "src/pipeline/**",
         "src/charts/**/*.ts",
+        "src/voice/**",
+        "src/audio/**",
+        "src/captions/chunk.ts",
         "src/design/motion.ts",
         "src/design/layout.ts",
       ],
+      exclude: ["src/pipeline/produce.ts", "src/pipeline/bundle.ts"],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
     },
   },

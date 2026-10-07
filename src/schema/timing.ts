@@ -9,8 +9,12 @@ export class CueResolutionError extends Error {
 
 export const DEFAULT_TAIL_PAD_MS = 400;
 
+/** Lowercase letters/digits; a '.' survives only between two digits ("1.5" != "15"). */
 export const normalizeWord = (word: string): string =>
-  word.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+  word
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}.]/gu, "")
+    .replace(/(?<!\d)\.|\.(?!\d)/g, "");
 
 export function resolveCue(words: readonly WordTiming[], atWord: string, occurrence = 1): number {
   const target = normalizeWord(atWord);

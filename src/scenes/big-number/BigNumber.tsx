@@ -3,7 +3,7 @@ import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remo
 import { BODY_FONT, DISPLAY_FONT } from "../../design/fonts";
 import { fitFontSize, formatNumber } from "../../design/layout";
 import { countUp, dataProgress, popIn, staggerDelay, sustainDrift } from "../../design/motion";
-import { PALETTE, SAFE, VIDEO } from "../../design/tokens";
+import { CAPTION_LANE, PALETTE, SAFE, VIDEO } from "../../design/tokens";
 import type { BigNumberProps } from "../../schema/storyboard";
 import type { SceneRenderProps } from "../types";
 
@@ -41,7 +41,7 @@ export const BigNumber: React.FC<SceneRenderProps<BigNumberProps>> = ({ props, c
         opacity: exit,
         justifyContent: "center",
         alignItems: "center",
-        padding: `${SAFE.top}px ${SAFE.side}px ${SAFE.bottom}px`,
+        padding: `${SAFE.top}px ${SAFE.side}px ${VIDEO.height - CAPTION_LANE.top}px`,
       }}
     >
       <div style={{ position: "relative", transform: `translateY(${drift}px)` }}>

@@ -12,7 +12,9 @@
     "render:hello": "rm -rf out/hello-frames && remotion render src/index.ts HelloBigNumber out/hello-frames --sequence --image-format=jpeg && ffmpeg -y -loglevel error -framerate 30 -pattern_type glob -i \"out/hello-frames/element-*.jpeg\" -c:v libx264 -pix_fmt yuv420p out/hello.mp4",
     "render:finance": "rm -rf out/finance-frames && remotion render src/index.ts FinanceDemo out/finance-frames --sequence --image-format=jpeg && ffmpeg -y -loglevel error -framerate 30 -pattern_type glob -i \"out/finance-frames/element-*.jpeg\" -c:v libx264 -pix_fmt yuv420p out/finance.mp4",
     "still:finance": "remotion still src/index.ts FinanceDemo",
-    "still:hello": "remotion still src/index.ts HelloBigNumber out/hello.png --frame=100"
+    "still:hello": "remotion still src/index.ts HelloBigNumber out/hello.png --frame=100",
+    "setup:tts": "python3 -m venv tts/.venv && tts/.venv/bin/pip install -q -r tts/requirements.txt",
+    "produce": "tsx scripts/produce.ts"
   },
   "dependencies": {
     "@remotion/bundler": "4.0.533",
@@ -35,6 +37,7 @@
     "@types/react": "^19.0.0",
     "@vitest/coverage-v8": "^5.0.0",
     "pngjs": "^7.0.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.0",
     "vitest": "^5.0.0"
   }

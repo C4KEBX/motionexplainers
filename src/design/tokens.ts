@@ -17,10 +17,13 @@ export const PALETTE = {
   highlight: "#ffd23f",
 } as const;
 
-/** Space for headline text: between the safe zones, minus room for the kicker line. */
+/** Fixed lane for captions: below all scene content, above the platform UI zone. */
+export const CAPTION_LANE = { top: 1340, bottom: VIDEO.height - SAFE.bottom } as const;
+
+/** Space for headline text: between the safe top and the caption lane, minus room for the kicker line. */
 export const TITLE_LANE = {
   width: VIDEO.width - 2 * SAFE.side,
-  height: VIDEO.height - SAFE.top - SAFE.bottom - 140,
+  height: CAPTION_LANE.top - SAFE.top - 140,
 } as const;
 
 /** Categorical series colors (bar races). Deliberately excludes the semantic gain/loss colors. */

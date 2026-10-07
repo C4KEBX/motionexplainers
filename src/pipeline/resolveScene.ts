@@ -2,6 +2,7 @@ import type { Scene, Storyboard } from "../schema/storyboard";
 import {
   assertValidWords,
   CueResolutionError,
+  DEFAULT_TAIL_PAD_MS,
   msToFrame,
   resolveCue,
   sceneDurationMs,
@@ -15,14 +16,23 @@ export type ComposedScene = {
   scene: Scene;
   cues: ResolvedCue[];
   durationFrames: number;
+  startFrame: number;
+  words: WordTiming[];
 };
 
+/**
+ * Scene length follows the narration: at least the word timings plus a tail, and never shorter
+ * than the audio itself (so a trailing breath is never cut off).
+ */
 export function composeScenes(
   sb: Storyboard,
   wordsByScene: Record<string, readonly WordTiming[]>,
   fps: number,
+  audioMsByScene: Record<string, number> = {},
 ): ComposedScene[] {
-  return sb.scenes.map((scene) => {
+  const composed: ComposedScene[] = [];
+  let startFrame = 0;
+  for (const scene of sb.scenes) {
     const words = wordsByScene[scene.id];
     if (!words) throw new CueResolutionError(`No word timings for scene "${scene.id}"`);
     try {
@@ -33,12 +43,18 @@ export function composeScenes(
         text: cue.text,
         x: cue.x,
       }));
-      return { id: scene.id, scene, cues, durationFrames: msToFrame(sceneDurationMs(words), fps) };
+      const wordsMs = sceneDurationMs(words);
+      const audioMs = audioMsByScene[scene.id];
+      const durationMs = audioMs === undefined ? wordsMs : Math.max(wordsMs, audioMs + DEFAULT_TAIL_PAD_MS);
+      const durationFrames = msToFrame(durationMs, fps);
+      composed.push({ id: scene.id, scene, cues, durationFrames, startFrame, words: [...words] });
+      startFrame += durationFrames;
     } catch (error) {
       if (error instanceof CueResolutionError) {
         throw new CueResolutionError(`Scene "${scene.id}": ${error.message}`);
       }
       throw error;
     }
-  });
+  }
+  return composed;
 }

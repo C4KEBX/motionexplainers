@@ -1,5 +1,7 @@
 import React from "react";
 import { AbsoluteFill, Series } from "remotion";
+import { Captions } from "../captions/Captions";
+import type { CaptionChunk } from "../captions/chunk";
 import type { ComposedScene } from "../pipeline/resolveScene";
 import { BigNumber } from "../scenes/big-number/BigNumber";
 import { BarRace } from "../scenes/bar-race/BarRace";
@@ -25,7 +27,10 @@ const SceneSwitch: React.FC<{ composed: ComposedScene }> = ({ composed }) => {
   }
 };
 
-export const Video: React.FC<{ scenes: ComposedScene[] }> = ({ scenes }) => (
+export const Video: React.FC<{ scenes: ComposedScene[]; captions: CaptionChunk[]; totalFrames?: number }> = ({
+  scenes,
+  captions,
+}) => (
   <AbsoluteFill style={{ background: PALETTE.ground }}>
     <Series>
       {scenes.map((composed) => (
@@ -34,5 +39,6 @@ export const Video: React.FC<{ scenes: ComposedScene[] }> = ({ scenes }) => (
         </Series.Sequence>
       ))}
     </Series>
+    <Captions chunks={captions} />
   </AbsoluteFill>
 );
