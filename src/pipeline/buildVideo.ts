@@ -6,6 +6,7 @@ import {
   assertCuesSupported,
   assertFactsTraceable,
   assertHeadlinesFit,
+  assertMapRegions,
   assertTextScenes,
   assertVariety,
 } from "../schema/validate";
@@ -32,6 +33,7 @@ export function buildVideo(
   assertCuesSupported(storyboard);
   assertHeadlinesFit(storyboard);
   assertTextScenes(storyboard);
+  assertMapRegions(storyboard);
   assertFactsTraceable(storyboard, parseFacts(factsJson));
   const scenes = composeScenes(storyboard, wordsFor(storyboard), fps, audioMsByScene);
   assertSceneTiming(scenes);

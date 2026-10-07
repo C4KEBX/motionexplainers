@@ -1,6 +1,7 @@
-import { fitTitleFontSize, formatNumber } from "../design/layout";
+import { QUOTE_WORD_GAP_EM, fitTitleFontSize, formatNumber } from "../design/layout";
 import { QUOTE_LANE, TITLE_LANE } from "../design/tokens";
 import type { Facts } from "./facts";
+import { COUNTRY_NAMES, regionTouchesBbox, suggestCountries } from "../map/atlas";
 import { deepEqual } from "./deepEqual";
 import { emphasisTarget } from "./emphasis";
 import { StoryboardError, type Scene, type Storyboard } from "./storyboard";
@@ -75,7 +76,30 @@ function assertBarRaceFact(scene: RaceScene, fact: Fact): void {
 }
 
 const normalizeQuote = (s: string): string =>
-  s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/\s+/g, " ").trim();
+  s
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[–—]/g, "-")
+    .replace(/…/g, "...")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const WORD_CHAR = "[\\p{L}\\p{N}]";
+
+/** The quote must appear in the claim bounded by non-word characters, so "eat" does not match "great". */
+function quoteInClaim(claim: string, quote: string): boolean {
+  const escaped = normalizeQuote(quote).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?<!${WORD_CHAR})${escaped}(?!${WORD_CHAR})`, "u").test(normalizeQuote(claim));
+}
+
+function assertTimelineFact(scene: Extract<Scene, { type: "timeline" }>, fact: Fact): void {
+  if (fact.dataset === undefined) {
+    throw new StoryboardError(`Scene "${scene.id}": fact "${fact.id}" has no dataset to verify the timeline against`);
+  }
+  if (!deepEqual(fact.dataset, scene.props.events)) {
+    throw new StoryboardError(`Scene "${scene.id}": timeline events do not match the dataset of fact "${fact.id}"`);
+  }
+}
 
 export function assertFactsTraceable(sb: Storyboard, facts: Facts): void {
   const byId = new Map(facts.facts.map((fact) => [fact.id, fact]));
@@ -99,10 +123,23 @@ export function assertFactsTraceable(sb: Storyboard, facts: Facts): void {
         break;
       case "quote": {
         const fact = lookup(scene.id, scene.props.factId);
-        if (!normalizeQuote(fact.claim).includes(normalizeQuote(scene.props.quote))) {
+        if (!quoteInClaim(fact.claim, scene.props.quote)) {
           throw new StoryboardError(
             `Scene "${scene.id}": the quote does not appear in the claim of fact "${fact.id}"; the on-screen wording must match the source`,
           );
+        }
+        break;
+      }
+      case "timeline":
+        assertTimelineFact(scene, lookup(scene.id, scene.props.factId));
+        break;
+      case "map": {
+        const fact = lookup(scene.id, scene.props.factId);
+        if (fact.dataset === undefined) {
+          throw new StoryboardError(`Scene "${scene.id}": fact "${fact.id}" has no dataset to verify the regions against`);
+        }
+        if (!deepEqual(fact.dataset, scene.props.regions)) {
+          throw new StoryboardError(`Scene "${scene.id}": map regions do not match the dataset of fact "${fact.id}"`);
         }
         break;
       }
@@ -136,6 +173,8 @@ const MAX_CALLOUTS: Record<Scene["type"], number> = {
   "kinetic-text": 0,
   compare: 1,
   quote: 0,
+  timeline: 0,
+  map: 0,
 };
 
 function assertCueAnchor(scene: Scene, cue: Scene["cues"][number]): void {
@@ -158,18 +197,47 @@ function assertCueAnchor(scene: Scene, cue: Scene["cues"][number]): void {
 const NO_CUES: ReadonlySet<Scene["type"]> = new Set(["title", "quote"]);
 const MAX_EMPHASIS = 2;
 
-function assertEmphasis(scene: Extract<Scene, { type: "kinetic-text" }>, cues: Scene["cues"]): void {
-  if (cues.length > MAX_EMPHASIS) {
-    throw new StoryboardError(`Scene "${scene.id}" (kinetic-text) supports at most ${MAX_EMPHASIS} emphasize cues; got ${cues.length}`);
+type EmphasisScene = Extract<Scene, { type: "kinetic-text" | "timeline" | "map" }>;
+const isEmphasisScene = (scene: Scene): scene is EmphasisScene =>
+  scene.type === "kinetic-text" || scene.type === "timeline" || scene.type === "map";
+
+/** What an emphasize cue can point at, and whether every item needs exactly one cue. */
+function emphasisItems(scene: EmphasisScene): { items: string[]; noun: string; exact: boolean } {
+  switch (scene.type) {
+    case "kinetic-text":
+      return { items: scene.props.lines, noun: "line", exact: false };
+    case "timeline":
+      return { items: scene.props.events.map((e) => e.label), noun: "event", exact: true };
+    case "map":
+      return { items: scene.props.regions, noun: "region", exact: true };
   }
+}
+
+function assertEmphasis(scene: EmphasisScene, cues: Scene["cues"]): void {
+  const { items, noun, exact } = emphasisItems(scene);
+  if (!exact && cues.length > MAX_EMPHASIS) {
+    throw new StoryboardError(`Scene "${scene.id}" (${scene.type}) supports at most ${MAX_EMPHASIS} emphasize cues; got ${cues.length}`);
+  }
+  if (exact && cues.length !== items.length) {
+    throw new StoryboardError(
+      `Scene "${scene.id}" (${scene.type}) needs exactly one emphasize cue per ${noun} (${items.length}); got ${cues.length}`,
+    );
+  }
+  const seen = new Set<string>();
   for (const cue of cues) {
     const text = cue.text as string;
     if (/\s/.test(text.trim())) {
       throw new StoryboardError(`Scene "${scene.id}": emphasize cue "${text}" must name a single word`);
     }
-    if (emphasisTarget(scene.props.lines, text) === null) {
+    const target = emphasisTarget(items, text);
+    if (target === null) {
       throw new StoryboardError(`Scene "${scene.id}": emphasize cue "${text}" is not a word on screen`);
     }
+    const key = exact ? `${target.line}` : `${target.line}:${target.word}`;
+    if (seen.has(key)) {
+      throw new StoryboardError(`Scene "${scene.id}": emphasize cue "${text}" targets the same ${exact ? noun : "word"} as an earlier cue`);
+    }
+    seen.add(key);
   }
 }
 
@@ -180,10 +248,10 @@ export function assertCuesSupported(sb: Storyboard): void {
       throw new StoryboardError(`Scene "${scene.id}" (${scene.type}) does not support cues`);
     }
     const emphasize = scene.cues.filter((cue) => cue.do === "emphasize");
-    if (scene.type !== "kinetic-text" && emphasize.length > 0) {
+    if (!isEmphasisScene(scene) && emphasize.length > 0) {
       throw new StoryboardError(`Scene "${scene.id}" (${scene.type}) cannot render "emphasize" cues`);
     }
-    if (scene.type === "kinetic-text") assertEmphasis(scene, emphasize);
+    if (isEmphasisScene(scene)) assertEmphasis(scene, emphasize);
     const callouts = scene.cues.filter((cue) => cue.do === "callout").length;
     if (callouts > MAX_CALLOUTS[scene.type]) {
       throw new StoryboardError(
@@ -218,11 +286,30 @@ export function assertTextScenes(sb: Storyboard): void {
     }
     if (scene.type === "quote") {
       try {
-        fitTitleFontSize(scene.props.quote, QUOTE_LANE.width, QUOTE_LANE.height, QUOTE_LANE.maxFont);
+        fitTitleFontSize(scene.props.quote, QUOTE_LANE.width, QUOTE_LANE.height, QUOTE_LANE.maxFont, undefined, QUOTE_WORD_GAP_EM);
       } catch (error) {
         if (error instanceof RangeError) throw new StoryboardError(`Scene "${scene.id}": the quote does not fit: ${error.message}`);
         throw error;
       }
+    }
+  }
+}
+
+/** Every region must be a country name in the bundled atlas (modern borders). */
+export function assertMapRegions(sb: Storyboard): void {
+  for (const scene of sb.scenes) {
+    if (scene.type !== "map") continue;
+    for (const name of scene.props.regions) {
+      if (COUNTRY_NAMES.has(name)) {
+        if (!regionTouchesBbox(name, scene.props.focus)) {
+          throw new StoryboardError(`Scene "${scene.id}": "${name}" lies outside the focus box and would light up off-screen; widen focus or drop it`);
+        }
+        continue;
+      }
+      const hint = suggestCountries(name);
+      throw new StoryboardError(
+        `Scene "${scene.id}": "${name}" is not a country name in the atlas${hint.length ? ` (did you mean: ${hint.join(", ")})` : ""}`,
+      );
     }
   }
 }

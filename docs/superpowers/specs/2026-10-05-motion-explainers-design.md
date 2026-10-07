@@ -93,6 +93,12 @@ Charts are pure functions of `(data, frame)`, built with SVG and d3 math (`d3-sc
 - **`compare`:** two sides, each `{label, value >= 0, factId}`, each traced to its own fact with the `big-number` rules; at most one callout, on the larger side.
 - **`quote`:** quote text (max 140 chars) must appear in its fact's `claim` (curly quotes and whitespace normalized); no cues; rejected if it cannot fit the lane or cannot finish revealing before the scene exits.
 
+### Plan 5 decisions
+- **Shared pacing:** `pacedKnots` (monotone schedule through `(frame, progress)` anchors, min 6 frames apart) drives the line chart callouts and the timeline spine. On `timeline` and `map`, the `emphasize` cue is the reveal cue: exactly one per event or region, its text a single word of the event label or region name, no two cues on one item.
+- **`timeline`:** 2-6 events `{year, label <= 26}`, years strictly increasing, integer, never 0 (negative is BC); events spoken in chronological order; events deep-equal the fact's `dataset`; years display as `753 BC`, `AD 476`, `1066`.
+- **`map`:** regions are country names from the bundled `world-atlas` 110m data (modern borders, so the scene always shows "Modern borders, approximate"); `focus` is a `[west, south, east, north]` box; the camera zooms from a 2.4x wider view into the focus; regions deep-equal the fact's `dataset`; unknown names fail with close-match suggestions.
+- **Quotes** (Plan 4 carry-overs): the trace is word-bounded and normalizes dashes and ellipses; the quote renders a 0.22em word gap that the fit check shares; attribution is capped at 28 characters.
+
 ### Scene library (v1)
 `line-chart`, `bar-chart` / `bar-race`, `big-number`, `kinetic-text`, `timeline`, `map` (history; free `world-atlas` data), `compare`, `quote`, `title` / `outro`. Nothing beyond this until real videos demand it.
 
@@ -132,7 +138,7 @@ Each milestone ends in something watchable.
 2. **Foundation**: design tokens, motion primitives, schema, 10s hello-world render.
 3. **Charts first**: `line-chart`, `bar-race`, `big-number`. The animation quality bar is proven here before any breadth. **Done (Plan 2)**: animated line chart (running-max axis rescale, leading dot, count-up readout, data-anchored callouts) and bar race (eased rank swaps, top-N fade, stable colors) render in `FinanceDemo` at about 0.06 s/frame.
 4. **Text and layout scenes**: `kinetic-text`, `compare`, `quote`, scene transitions. **Done (Plan 4)**, together with narration-paced line drawing; see Plan 4 decisions.
-5. **History scenes**: `timeline`, `map`.
+5. **History scenes**: `timeline`, `map`. **Done (Plan 5)**; see Plan 5 decisions.
 6. **Audio finish**: captions, music ducking, loudness. **Done (Plan 3)**: word-by-word captions in a fixed lane (charts shrank to make room), narration from Edge TTS with a deterministic offline stand-in, a ducked music bed, two-pass loudness to -14 LUFS, and `npm run produce` end to end.
 7. **Skill**, then first real 60s videos: one finance, one investing, one history.
 

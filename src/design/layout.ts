@@ -22,7 +22,9 @@ export function formatNumber(value: number, decimals: number): string {
 
 export const TITLE_MIN_SIZE_PX = 64;
 const TITLE_LINE_HEIGHT = 1.02;
-const TITLE_WORD_GAP_EM = 0.15;
+export const TITLE_WORD_GAP_EM = 0.15;
+/** Quotes render a roomier gap than headlines; the fit check and the renderer both use it. */
+export const QUOTE_WORD_GAP_EM = 0.22;
 
 /** Largest even font size (<= maxSizePx) at which the wrapped headline fits the lane; throws if none. */
 export function fitTitleFontSize(
@@ -31,12 +33,13 @@ export function fitTitleFontSize(
   laneHeightPx: number,
   maxSizePx: number,
   charWidthEm = DISPLAY_CHAR_WIDTH_EM,
+  wordGapEm = TITLE_WORD_GAP_EM,
 ): number {
   const words = headline.split(/\s+/).filter(Boolean);
   for (let size = maxSizePx; size >= TITLE_MIN_SIZE_PX; size -= 2) {
     const widthOf = (word: string) => word.length * size * charWidthEm;
     if (words.some((word) => widthOf(word) > laneWidthPx)) continue;
-    const gap = size * TITLE_WORD_GAP_EM;
+    const gap = size * wordGapEm;
     let lines = 1;
     let lineWidth = 0;
     for (const word of words) {
@@ -51,4 +54,10 @@ export function fitTitleFontSize(
     if (lines * size * TITLE_LINE_HEIGHT <= laneHeightPx) return size;
   }
   throw new RangeError(`Headline "${headline}" cannot fit the title lane at ${TITLE_MIN_SIZE_PX}px or larger`);
+}
+
+/** Display form of a historical year: negative years are BC, years below 1000 are AD-prefixed. */
+export function formatYear(year: number): string {
+  if (year < 0) return `${-year} BC`;
+  return year < 1000 ? `AD ${year}` : String(year);
 }

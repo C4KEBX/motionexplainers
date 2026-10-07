@@ -178,9 +178,60 @@ const QuoteSceneSchema = z.strictObject({
   type: z.literal("quote"),
   props: z.strictObject({
     quote: z.string().min(1).max(140),
-    attribution: z.string().min(1).max(40),
+    attribution: z.string().min(1).max(28),
     factId: z.string().min(1),
   }),
+});
+
+const TimelineEventSchema = z.strictObject({
+  year: z.number().int().min(-3000).max(2100).refine((y) => y !== 0, "there is no year 0"),
+  label: z.string().min(1).max(26),
+});
+
+const TimelineSceneSchema = z.strictObject({
+  ...sceneBase,
+  type: z.literal("timeline"),
+  props: z
+    .strictObject({
+      title: z.string().min(1).max(32),
+      events: z.array(TimelineEventSchema).min(2).max(6),
+      tone: z.enum(TONES).default("highlight"),
+      factId: z.string().min(1),
+    })
+    .superRefine((props, ctx) => {
+      props.events.forEach((event, i) => {
+        if (i > 0 && event.year <= props.events[i - 1].year) {
+          ctx.addIssue({ code: "custom", path: ["events", i, "year"], message: "event years must be strictly increasing" });
+        }
+      });
+    }),
+});
+
+const LonSchema = z.number().min(-180).max(180);
+const LatSchema = z.number().min(-80).max(80); // matches the camera's Mercator clamp
+
+const MapSceneSchema = z.strictObject({
+  ...sceneBase,
+  type: z.literal("map"),
+  props: z
+    .strictObject({
+      title: z.string().min(1).max(32),
+      regions: z.array(z.string().min(1).max(40)).min(1).max(6),
+      focus: z.tuple([LonSchema, LatSchema, LonSchema, LatSchema]),
+      tone: z.enum(TONES).default("highlight"),
+      factId: z.string().min(1),
+    })
+    .superRefine((props, ctx) => {
+      const [w, s, e, n] = props.focus;
+      if (w >= e || s >= n) {
+        ctx.addIssue({ code: "custom", path: ["focus"], message: "focus must be [west, south, east, north] with west < east and south < north" });
+      }
+      const seen = new Set<string>();
+      props.regions.forEach((name, i) => {
+        if (seen.has(name)) ctx.addIssue({ code: "custom", path: ["regions", i], message: `duplicate region "${name}"` });
+        seen.add(name);
+      });
+    }),
 });
 
 const SceneSchema = z.discriminatedUnion("type", [
@@ -191,6 +242,8 @@ const SceneSchema = z.discriminatedUnion("type", [
   KineticTextSceneSchema,
   CompareSceneSchema,
   QuoteSceneSchema,
+  TimelineSceneSchema,
+  MapSceneSchema,
 ]);
 
 export const StoryboardSchema = z
@@ -226,6 +279,8 @@ export type LineChartProps = Extract<Scene, { type: "line-chart" }>["props"];
 export type KineticTextProps = Extract<Scene, { type: "kinetic-text" }>["props"];
 export type CompareProps = Extract<Scene, { type: "compare" }>["props"];
 export type QuoteProps = Extract<Scene, { type: "quote" }>["props"];
+export type TimelineProps = Extract<Scene, { type: "timeline" }>["props"];
+export type MapProps = Extract<Scene, { type: "map" }>["props"];
 export type BarRaceProps = Extract<Scene, { type: "bar-race" }>["props"];
 
 export function parseStoryboard(input: unknown): Storyboard {

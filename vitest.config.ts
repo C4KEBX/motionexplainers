@@ -14,6 +14,7 @@ export default defineConfig({
         "src/audio/**",
         "src/captions/chunk.ts",
         "src/compose/wipe.ts",
+        "src/map/**",
         "src/scenes/**/timing.ts",
         "src/scenes/**/layout.ts",
         "src/design/motion.ts",

@@ -44,3 +44,33 @@ export function scheduleProgress(frame: number, knots: readonly Knot[]): number 
     (t ** 3 - t ** 2) * h * m[i + 1];
   return Math.min(last.progress, Math.max(first.progress, value));
 }
+
+export type Anchor = { frame: number; progress: number };
+export type PacedKnots = { knots: Knot[]; frames: number[] };
+
+/**
+ * Knots for a cursor that must stand at `progress` on `frame` for every anchor. Anchors are taken in
+ * time order (ties by progress, then input order), pushed at least `minSegment` frames apart, and
+ * the path is closed at progress 1. `frames[i]` is the frame input anchor `i` is reached.
+ */
+export function pacedKnots(
+  anchors: readonly Anchor[],
+  opts: { startFrame: number; defaultEnd: number; minSegment: number; orderError: (index: number) => string },
+): PacedKnots {
+  const ordered = anchors
+    .map((a, index) => ({ ...a, index }))
+    .sort((a, b) => a.frame - b.frame || a.progress - b.progress || a.index - b.index);
+  const knots: Knot[] = [{ frame: opts.startFrame, progress: 0 }];
+  const frames = new Array<number>(anchors.length);
+  for (const a of ordered) {
+    const prev = knots[knots.length - 1];
+    if (a.progress < prev.progress) throw new RangeError(opts.orderError(a.index));
+    const frame = Math.max(a.frame, prev.frame + opts.minSegment);
+    knots.push({ frame, progress: a.progress });
+    frames[a.index] = frame;
+  }
+  const last = knots[knots.length - 1];
+  const tail = last.progress < 1 ? Math.max(opts.defaultEnd, last.frame + opts.minSegment) : opts.defaultEnd;
+  if (tail > last.frame) knots.push({ frame: tail, progress: 1 });
+  return { knots, frames };
+}

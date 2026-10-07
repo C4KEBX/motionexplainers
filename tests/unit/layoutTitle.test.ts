@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fitTitleFontSize } from "../../src/design/layout";
+import { QUOTE_WORD_GAP_EM, TITLE_WORD_GAP_EM, fitTitleFontSize } from "../../src/design/layout";
 
 const LANE_W = 960;
 const LANE_H = 1240;
@@ -20,5 +20,21 @@ describe("fitTitleFontSize", () => {
   });
   it("throws when even the minimum size cannot fit", () => {
     expect(() => fitTitleFontSize("Pneumonoultramicroscopicsilicovolcanoconiosis", LANE_W, LANE_H, 190)).toThrow(RangeError);
+  });
+});
+
+describe("word gap parameter", () => {
+  it("a wider gap never fits a larger size and can force a smaller one", () => {
+    const text = Array.from({ length: 12 }, () => "word").join(" ");
+    const base = fitTitleFontSize(text, 960, 700, 190);
+    const wide = fitTitleFontSize(text, 960, 700, 190, undefined, 0.6);
+    expect(wide).toBeLessThanOrEqual(base);
+    expect(QUOTE_WORD_GAP_EM).toBeGreaterThan(TITLE_WORD_GAP_EM);
+  });
+});
+
+describe("word gap shared by fit and render", () => {
+  it("is exported so every scene that wraps title-style text renders the gap the fit check assumed", () => {
+    expect(TITLE_WORD_GAP_EM).toBe(0.15);
   });
 });

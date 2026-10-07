@@ -62,3 +62,11 @@ describe("drawPlan", () => {
     }
   });
 });
+
+describe("drawPlan ordering of same-frame cues", () => {
+  it("orders cues spoken on the same frame by x so a feasible order is not rejected", () => {
+    const plan = drawPlan([{ frame: 50, x: 2020 }, { frame: 50, x: 2010 }], points, DURATION);
+    expect(plan.appear[1]).toBe(50);
+    expect(plan.appear[0]).toBe(50 + LINE_DRAW_MIN_SEGMENT);
+  });
+});

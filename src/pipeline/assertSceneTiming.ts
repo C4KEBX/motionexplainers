@@ -1,6 +1,8 @@
 import { EXIT_FRAMES, RACE_RUN, drawPlan, raceRunFrames } from "../charts/timing";
 import { kineticRevealFrames } from "../scenes/kinetic-text/timing";
 import { compareRevealFrames } from "../scenes/compare/layout";
+import { MAP, regionCueFrames } from "../scenes/map/timing";
+import { TIMELINE, eventCueFramesFor, timelinePlan } from "../scenes/timeline/timing";
 import { quoteRevealFrames } from "../scenes/quote/timing";
 import { StoryboardError } from "../schema/storyboard";
 import type { ComposedScene } from "./resolveScene";
@@ -37,6 +39,35 @@ export function assertSceneTiming(scenes: readonly ComposedScene[]): void {
       throw new StoryboardError(
         `Scene "${scene.id}" is too short (${composed.durationFrames} frames): the compare values cannot finish counting up before the scene exits; lengthen the narration`,
       );
+    }
+    if (scene.type === "map") {
+      let lastCue: number;
+      try {
+        lastCue = Math.max(...regionCueFrames(scene.props.regions, composed.cues));
+      } catch (error) {
+        if (error instanceof RangeError) throw new StoryboardError(`Scene "${scene.id}": ${error.message}`);
+        throw error;
+      }
+      if (lastCue + MAP.settle > limit) {
+        throw new StoryboardError(
+          `Scene "${scene.id}" is too short (${composed.durationFrames} frames): the map cannot light its last region before the scene exits; lengthen the narration`,
+        );
+      }
+    }
+    if (scene.type === "timeline") {
+      let done: number;
+      try {
+        const plan = timelinePlan(eventCueFramesFor(scene.props.events, composed.cues), composed.durationFrames);
+        done = Math.max(plan.knots[plan.knots.length - 1].frame, Math.max(...plan.frames) + TIMELINE.settle);
+      } catch (error) {
+        if (error instanceof RangeError) throw new StoryboardError(`Scene "${scene.id}": ${error.message}`);
+        throw error;
+      }
+      if (done > limit) {
+        throw new StoryboardError(
+          `Scene "${scene.id}" is too short (${composed.durationFrames} frames): the timeline cannot reach its last event before the scene exits; lengthen the narration`,
+        );
+      }
     }
     if (scene.type === "quote" && quoteRevealFrames(scene.props.quote.split(/\s+/).filter(Boolean).length) > limit) {
       throw new StoryboardError(

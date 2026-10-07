@@ -76,3 +76,19 @@ describe("quote reveal timing", () => {
     expect(() => buildVideo(board(fast), f, words, 30)).toThrow(/"q".*too short/);
   });
 });
+
+describe("quote trace and limits (Plan 4 review carry-overs)", () => {
+  it("does not accept a quote that only matches inside a longer word", () => {
+    expect(() => assertFactsTraceable(board(quote({ quote: "eat" })), facts("A great leader."))).toThrow(/does not appear/);
+  });
+  it("accepts a quote bounded by punctuation or spaces", () => {
+    expect(() => assertFactsTraceable(board(quote({ quote: "eat" })), facts("Men eat, then sleep."))).not.toThrow();
+  });
+  it("normalizes dash and ellipsis variants on both sides", () => {
+    expect(() => assertFactsTraceable(board(quote({ quote: "Wait... go - now" })), facts("He said: Wait… go – now"))).not.toThrow();
+  });
+  it("caps the attribution at 28 characters so it cannot wrap", () => {
+    expect(() => board(quote({ attribution: "a".repeat(28) }))).not.toThrow();
+    expect(() => board(quote({ attribution: "a".repeat(29) }))).toThrow(StoryboardError);
+  });
+});

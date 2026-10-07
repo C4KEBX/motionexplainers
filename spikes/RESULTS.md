@@ -66,6 +66,19 @@
 - Render tests must run serially (`--no-file-parallelism`): five render files in parallel produced a different golden failure on each run.
 - Case-insensitive filesystem gotcha: `Wipe.tsx` collided with `wipe.ts` (TS1261); the overlay is `WipeOverlay.tsx`.
 
-## Inputs for Plan 5 (history scenes)
+## Inputs for Plan 5 (history scenes) (done, see Plan 5 results)
 - `timeline` and `map` (free `world-atlas` data).
 - Carried gaps: title headline numbers, callout text and chart titles are not traced to facts; fonts load from Google at render time; the stand-in voice is noise, not speech; `produce` renders on one process; area-fill vertical edge at the cursor left as is; bar-race pacing is proportional.
+
+## Plan 5 results (timeline and map)
+- Ancient demo (title, map, timeline, kinetic-text; Edge voice): 889 frames, 29.6 s, -14.0 LUFS; `produce` took 1 min 56 s end to end (about 0.13 s/frame all-in). The map scene alone rendered 251 frames in 43 s including bundle start-up (about 0.17 s/frame), above the finance demo's 0.06 but acceptable; the cost is path generation for the visible countries each frame.
+- On the final mp4, countries light on their spoken names (France lit as "France," is highlighted) and the timeline spine is on the event being spoken.
+- Atlas name gotchas: names follow Natural Earth ("United States of America", "Czechia"); a wrong name fails with suggestions.
+- `tsx` imports the atlas JSON directly, so `produce` needs no special handling.
+- Cosmetic: a quote can wrap leaving one short word ("I") at a line end.
+- The map's `too short` guard cannot be tripped by narration alone (the 12-frame tail pad guarantees room); it is kept as defense and tested with a hand-built scene.
+
+## Inputs for Plan 6 (the Claude Code skill)
+- Topic to `facts.json` with sources to script (about 150 words for 60 s) to storyboard JSON, using `fixtures/*.storyboard.json` (finance, history, ancient) as few-shot examples; a validate-and-repair loop driven by the existing `StoryboardError` messages (they name the scene and the fix); a review sheet of stills per scene plus the fact list; a human review gate before `npm run produce`.
+- Rules the skill must teach: facts carry `value` or `dataset` exactly equal to the scene data; `quote` text must appear in the fact's `claim`; `timeline` needs one emphasize cue per event in chronological spoken order, `map` one per region (any order) and each region must overlap `focus`; `kinetic-text` has no digits; map regions use atlas names; scene types vary (no three of one type in a row); narration length 55-60 s.
+- Carried gaps: title numbers, callout text and chart titles are not fact-traced; the quote trace cannot detect a truncated quote; fonts load from Google at render time; the stand-in voice is noise; single-process rendering; the area-fill edge; bar-race pacing is proportional.

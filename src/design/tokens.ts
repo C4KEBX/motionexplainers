@@ -44,3 +44,6 @@ export const QUOTE_LANE = {
   height: TITLE_LANE.height - 360,
   maxFont: 120,
 } as const;
+
+/** The map's drawing area: below the title and footnote, above the caption lane. */
+export const MAP_BOX = { left: SAFE.side, right: VIDEO.width - SAFE.side, top: 300, bottom: 1300 } as const;

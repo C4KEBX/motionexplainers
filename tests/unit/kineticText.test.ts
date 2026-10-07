@@ -50,6 +50,10 @@ describe("kinetic-text cue rules", () => {
     expect(() => assertCuesSupported(board(kinetic({}, three)))).toThrow(/at most 2/);
     expect(() => assertCuesSupported(board(kinetic({}, [{ atWord: "enemy", do: "callout", text: "x" }])))).toThrow(/at most 0 callout/);
   });
+  it("rejects two emphasize cues that resolve to the same on-screen word", () => {
+    const cues = [emphasize("enemy", "debt"), emphasize("enemy")];
+    expect(() => assertCuesSupported(board(kinetic({}, cues)))).toThrow(/"k".*same word/);
+  });
   it("still rejects emphasize cues on scenes that cannot render them", () => {
     const big = {
       id: "n", type: "big-number", narration: "Num.", props: { value: 1, label: "l", factId: "f" },

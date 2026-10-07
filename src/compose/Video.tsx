@@ -8,7 +8,9 @@ import { BarRace } from "../scenes/bar-race/BarRace";
 import { LineChart } from "../scenes/line-chart/LineChart";
 import { Compare } from "../scenes/compare/Compare";
 import { KineticText } from "../scenes/kinetic-text/KineticText";
+import { MapScene } from "../scenes/map/MapScene";
 import { Quote } from "../scenes/quote/Quote";
+import { Timeline } from "../scenes/timeline/Timeline";
 import { Title } from "../scenes/title/Title";
 import { PALETTE } from "../design/tokens";
 import { WipeOverlay } from "./WipeOverlay";
@@ -31,6 +33,10 @@ const SceneSwitch: React.FC<{ composed: ComposedScene }> = ({ composed }) => {
       return <Compare props={scene.props} cues={cues} durationFrames={durationFrames} />;
     case "quote":
       return <Quote props={scene.props} cues={cues} durationFrames={durationFrames} />;
+    case "timeline":
+      return <Timeline props={scene.props} cues={cues} durationFrames={durationFrames} />;
+    case "map":
+      return <MapScene props={scene.props} cues={cues} durationFrames={durationFrames} />;
     default: {
       const unreachable: never = scene;
       throw new Error(`Unhandled scene type: ${JSON.stringify(unreachable)}`);

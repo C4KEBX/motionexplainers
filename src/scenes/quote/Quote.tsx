@@ -2,7 +2,7 @@ import React from "react";
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { EXIT_FRAMES } from "../../charts/timing";
 import { BODY_FONT, DISPLAY_FONT } from "../../design/fonts";
-import { fitTitleFontSize } from "../../design/layout";
+import { QUOTE_WORD_GAP_EM, fitTitleFontSize } from "../../design/layout";
 import { popIn, sustainDrift } from "../../design/motion";
 import { CAPTION_LANE, PALETTE, QUOTE_LANE, SAFE, VIDEO } from "../../design/tokens";
 import type { QuoteProps } from "../../schema/storyboard";
@@ -14,7 +14,7 @@ export const Quote: React.FC<SceneRenderProps<QuoteProps>> = ({ props, durationF
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const words = props.quote.split(/\s+/).filter(Boolean);
-  const size = fitTitleFontSize(props.quote, QUOTE_LANE.width, QUOTE_LANE.height, QUOTE_LANE.maxFont);
+  const size = fitTitleFontSize(props.quote, QUOTE_LANE.width, QUOTE_LANE.height, QUOTE_LANE.maxFont, undefined, QUOTE_WORD_GAP_EM);
   const attrDelay = QUOTE.start + (words.length - 1) * QUOTE.wordGap + QUOTE.attrLead;
   const exit = interpolate(frame, [durationFrames - EXIT_FRAMES, durationFrames], [1, 0], {
     extrapolateLeft: "clamp",
@@ -39,7 +39,7 @@ export const Quote: React.FC<SceneRenderProps<QuoteProps>> = ({ props, durationF
         >
           “
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "0 0.3em", fontSize: size, marginTop: 24 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: `0 ${QUOTE_WORD_GAP_EM}em`, fontSize: size, marginTop: 24 }}>
           {words.map((word, i) => {
             const p = Math.min(1, popIn(frame, fps, QUOTE.start + i * QUOTE.wordGap));
             return (
@@ -57,7 +57,7 @@ export const Quote: React.FC<SceneRenderProps<QuoteProps>> = ({ props, durationF
         </div>
         <div style={{ marginTop: 48, display: "flex", alignItems: "center", gap: 28, opacity: attrIn }}>
           <div style={{ width: 140, height: 8, background: PALETTE.highlight, transform: `scaleX(${attrIn})`, transformOrigin: "left center" }} />
-          <div style={{ fontFamily: BODY_FONT, fontSize: 48, color: PALETTE.highlight }}>{props.attribution}</div>
+          <div style={{ fontFamily: BODY_FONT, fontSize: 48, color: PALETTE.highlight, whiteSpace: "nowrap" }}>{props.attribution}</div>
         </div>
       </div>
     </AbsoluteFill>

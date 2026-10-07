@@ -41,3 +41,13 @@ describe("quote lane", () => {
     expect(QUOTE_LANE.width).toBe(TITLE_LANE.width);
   });
 });
+
+describe("map box", () => {
+  it("sits between the title and the caption lane, inside the side gutters", async () => {
+    const { MAP_BOX } = await import("../../src/design/tokens");
+    expect(MAP_BOX.left).toBe(SAFE.side);
+    expect(MAP_BOX.right).toBe(VIDEO.width - SAFE.side);
+    expect(MAP_BOX.top).toBeGreaterThan(SAFE.top + 100);
+    expect(MAP_BOX.bottom).toBeLessThan(CAPTION_LANE.top);
+  });
+});

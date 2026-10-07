@@ -12,3 +12,19 @@ export function emphasisTarget(lines: readonly string[], text: string): Emphasis
   }
   return null;
 }
+
+/** Frame of the emphasize cue that targets each item, in item order. Throws if an item has no cue. */
+export function itemCueFrames(
+  items: readonly string[],
+  cues: readonly { frame: number; do: string; text?: string }[],
+): number[] {
+  const frames = new Array<number | undefined>(items.length).fill(undefined);
+  for (const cue of cues) {
+    if (cue.do !== "emphasize" || cue.text === undefined) continue;
+    const target = emphasisTarget(items, cue.text);
+    if (target) frames[target.line] = cue.frame;
+  }
+  const missing = frames.findIndex((f) => f === undefined);
+  if (missing >= 0) throw new RangeError(`"${items[missing]}" has no emphasize cue`);
+  return frames as number[];
+}
