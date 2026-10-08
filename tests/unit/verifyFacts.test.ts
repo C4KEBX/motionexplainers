@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseFacts } from "../../src/schema/facts";
-import { factTokens, htmlToText, isBlockedUrl, verifyFact as verifyFactReal, verifyFacts as verifyFactsReal } from "../../src/skill/verifyFacts";
+import { factTokens, htmlToText, isBlockedAddress, isBlockedUrl, verifyFact as verifyFactReal, verifyFacts as verifyFactsReal } from "../../src/skill/verifyFacts";
 
 const PUBLIC = async () => ["93.184.216.34"];
 type Opts = Parameters<typeof verifyFactReal>[2];
@@ -92,10 +92,37 @@ describe("factTokens", () => {
   });
 });
 
+describe("isBlockedAddress", () => {
+  it.each([
+    "0:0:0:0:0:ffff:7f00:1", "0000:0000:0000:0000:0000:ffff:7f00:0001", "::ffff:10.0.0.1", "64:ff9b::a00:1",
+    "64:ff9b:1::1", "2002:7f00:1::", "2002:a00:1::", "2002:c0a8:101::", "fec0::1", "2001:db8::1", "2001:0:4136:e378::1", "100::1",
+    "192.0.0.1", "192.0.2.1", "198.51.100.1", "203.0.113.1", "192.88.99.1", "not-an-ip:::", "1:2:3:4:5:6:7:8:9",
+  ])("blocks %s", (addr) => expect(isBlockedAddress(addr)).toBe(true));
+
+  it.each(["93.184.216.34", "8.8.8.8", "2606:4700:4700::1111", "2001:4860:4860::8888", "2002:5db8:d822::1", "::ffff:8.8.8.8", "64:ff9b::808:808"])(
+    "allows public %s",
+    (addr) => expect(isBlockedAddress(addr)).toBe(false),
+  );
+});
+
 describe("htmlToText", () => {
   it("drops scripts and styles, strips tags, decodes entities and collapses space", () => {
     const text = htmlToText("<style>a{}</style><script>var x=999;</script><p>A&nbsp;&amp;&nbsp;B <b>57.7</b></p>\n\n<p>million</p>");
     expect(text).toBe("A & B 57.7 million");
+  });
+
+  it("keeps the old behavior for unclosed and malformed markup", () => {
+    expect(htmlToText("a <script>var x=1; b")).toBe("a var x=1; b"); // no </script>: only the tag is stripped
+    expect(htmlToText("a <> b < 3 and 4 > 2")).toBe("a <> b 2");
+    expect(htmlToText("<SCRIPT>1</SCRIPT>ok")).toBe("ok");
+  });
+
+  it("runs in linear time on pathological input", () => {
+    const start = Date.now();
+    htmlToText("<script ".repeat(100_000));
+    htmlToText("<a".repeat(200_000));
+    htmlToText("<style>".repeat(100_000) + "</style>");
+    expect(Date.now() - start).toBeLessThan(1000);
   });
 });
 
@@ -154,6 +181,16 @@ describe("verifyFact", () => {
     const huge = "x".repeat(3_000_000) + " 57.7";
     expect((await verifyFact(fact({ value: 57.7 }), fetchOf(page(huge)))).status).toBe("not-found");
     expect((await verifyFact(fact({ dataset: ["Italy"] }), fetchOf(page("Italy")))).detail).toMatch(/nothing numeric/);
+  });
+  it("never buffers a response that has no stream to cap", async () => {
+    const unstreamed = {
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "text/html" }),
+      body: null,
+      text: async () => "57.7 million",
+    } as unknown as Response;
+    expect((await verifyFact(fact({ value: 57.7 }), fetchOf(unstreamed))).status).toBe("not-found");
   });
 });
 

@@ -16,31 +16,60 @@ function ipv4Octets(host: string): number[] | null {
   return m ? m.slice(1).map(Number) : null;
 }
 
-function blockedIpv4([a, b]: number[]): boolean {
+function blockedIpv4([a, b, c]: number[]): boolean {
   return (
     a === 0 || a === 10 || a === 127 || a >= 224 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || (a === 198 && (b === 18 || b === 19))
+    (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || (a === 198 && (b === 18 || b === 19)) ||
+    (a === 192 && b === 0 && (c === 0 || c === 2)) || (a === 192 && b === 88 && c === 99) ||
+    (a === 198 && b === 51 && c === 100) || (a === 203 && b === 0 && c === 113)
   );
 }
 
-/** IPv4 hidden inside an IPv6 literal (::ffff:a.b.c.d, ::a.b.c.d, 64:ff9b::a.b.c.d), in dotted or two-hextet form. */
-function embeddedIpv4(host: string): number[] | null {
-  const m = host.match(/^(?:::ffff:|::|64:ff9b::)(?:(\d{1,3}(?:\.\d{1,3}){3})|([0-9a-f]{1,4}):([0-9a-f]{1,4}))$/);
-  if (!m) return null;
-  if (m[1]) return ipv4Octets(m[1]);
-  const hi = parseInt(m[2], 16);
-  const lo = parseInt(m[3], 16);
-  return [hi >> 8, hi & 255, lo >> 8, lo & 255];
+/** Eight 16-bit groups from any IPv6 spelling (:: compression, dotted tail), or null when it is not valid. */
+function ipv6Groups(host: string): number[] | null {
+  let text = host;
+  const dotted = text.match(/(\d{1,3}(?:\.\d{1,3}){3})$/);
+  if (dotted) {
+    const o = ipv4Octets(dotted[1]);
+    if (!o || o.some((n) => n > 255)) return null;
+    text = text.slice(0, -dotted[1].length) + ((o[0] << 8) | o[1]).toString(16) + ":" + ((o[2] << 8) | o[3]).toString(16);
+  }
+  const halves = text.split("::");
+  if (halves.length > 2) return null;
+  const parse = (part: string): number[] | null => {
+    if (part === "") return [];
+    const groups = part.split(":");
+    return groups.every((g) => /^[0-9a-f]{1,4}$/.test(g)) ? groups.map((g) => parseInt(g, 16)) : null;
+  };
+  const head = parse(halves[0]);
+  const tail = halves.length === 2 ? parse(halves[1]) : [];
+  if (!head || !tail) return null;
+  if (halves.length === 1) return head.length === 8 ? head : null;
+  const fill = 8 - head.length - tail.length;
+  return fill < 1 ? null : [...head, ...new Array<number>(fill).fill(0), ...tail];
+}
+
+const v4Of = (hi: number, lo: number): number[] => [hi >> 8, hi & 255, lo >> 8, lo & 255];
+
+function blockedIpv6(host: string): boolean {
+  const g = ipv6Groups(host);
+  if (!g) return true; // not a valid literal: fail closed
+  const [g0, g1, g2, g3, g4, g5, g6, g7] = g;
+  if (g.slice(0, 5).every((n) => n === 0) && (g5 === 0xffff || g5 === 0)) return blockedIpv4(v4Of(g6, g7)); // ::ffff:a.b.c.d, ::a.b.c.d, and :: itself
+  if (g0 === 0x64 && g1 === 0xff9b && g2 === 0 && g3 === 0 && g4 === 0 && g5 === 0) return blockedIpv4(v4Of(g6, g7)); // NAT64
+  if (g0 === 0x2002) return blockedIpv4(v4Of(g1, g2)); // 6to4
+  return (
+    (g0 === 0x64 && g1 === 0xff9b) || // local-use NAT64
+    (g0 === 0x100 && g1 === 0 && g2 === 0 && g3 === 0) || // discard-only
+    (g0 === 0x2001 && (g1 === 0 || g1 === 0xdb8)) || // Teredo, documentation
+    (g0 & 0xfe00) === 0xfc00 || (g0 & 0xffc0) === 0xfe80 || (g0 & 0xffc0) === 0xfec0 || (g0 & 0xff00) === 0xff00
+  );
 }
 
 /** True for an IP literal (as the URL parser prints it, or as DNS returns it) in a range the verifier must never contact. */
 export function isBlockedAddress(raw: string): boolean {
   const host = raw.toLowerCase().replace(/^\[|\]$/g, "");
-  if (host.includes(":")) {
-    const inner = embeddedIpv4(host);
-    if (inner) return blockedIpv4(inner);
-    return host === "::1" || host === "::" || /^f[cd]/.test(host) || /^fe[89ab]/.test(host) || /^ff/.test(host);
-  }
+  if (host.includes(":")) return blockedIpv6(host);
   const o = ipv4Octets(host);
   return o !== null && blockedIpv4(o);
 }
@@ -88,10 +117,44 @@ export function factTokens(fact: Fact): string[] {
 
 const ENTITIES: Record<string, string> = { "&nbsp;": " ", "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'", "&apos;": "'" };
 
+/** Drops script/style bodies and tags in one forward pass; every search resumes where the last ended, so cost stays linear. */
+function stripMarkup(html: string): string {
+  const lower = html.toLowerCase();
+  const out: string[] = [];
+  const noCloser = new Set<string>();
+  let noMoreGt = false;
+  let i = 0;
+  while (i < html.length) {
+    const lt = html.indexOf("<", i);
+    if (lt === -1) break;
+    out.push(html.slice(i, lt));
+    i = lt;
+    const name = (["script", "style"] as const).find((n) => lower.startsWith(n, lt + 1));
+    if (name && !noCloser.has(name)) {
+      const close = lower.indexOf(`</${name}>`, lt + 1 + name.length);
+      if (close !== -1) {
+        out.push(" ");
+        i = close + name.length + 3;
+        continue;
+      }
+      noCloser.add(name);
+    }
+    const gt = noMoreGt || html[lt + 1] === ">" ? -1 : html.indexOf(">", lt + 1);
+    if (gt === -1) {
+      if (html[lt + 1] !== ">") noMoreGt = true;
+      out.push("<");
+      i = lt + 1;
+      continue;
+    }
+    out.push(" ");
+    i = gt + 1;
+  }
+  out.push(html.slice(i));
+  return out.join("");
+}
+
 export function htmlToText(html: string): string {
-  return html
-    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
+  return stripMarkup(html)
     .replace(/&(?:nbsp|amp|lt|gt|quot|apos|#39);/g, (e) => ENTITIES[e] ?? e)
     .replace(/\s+/g, " ")
     .trim();
@@ -109,7 +172,7 @@ const hasToken = (text: string, token: string): boolean =>
 
 async function readCapped(response: Response): Promise<string> {
   const reader = response.body?.getReader();
-  if (!reader) return (await response.text()).slice(0, MAX_BODY_BYTES);
+  if (!reader) return ""; // no stream means no body; never buffer an uncapped text()
   const chunks: Uint8Array[] = [];
   let size = 0;
   while (size < MAX_BODY_BYTES) {
