@@ -82,3 +82,22 @@
 - Topic to `facts.json` with sources to script (about 150 words for 60 s) to storyboard JSON, using `fixtures/*.storyboard.json` (finance, history, ancient) as few-shot examples; a validate-and-repair loop driven by the existing `StoryboardError` messages (they name the scene and the fix); a review sheet of stills per scene plus the fact list; a human review gate before `npm run produce`.
 - Rules the skill must teach: facts carry `value` or `dataset` exactly equal to the scene data; `quote` text must appear in the fact's `claim`; `timeline` needs one emphasize cue per event in chronological spoken order, `map` one per region (any order) and each region must overlap `focus`; `kinetic-text` has no digits; map regions use atlas names; scene types vary (no three of one type in a row); narration length 55-60 s.
 - Carried gaps: title numbers, callout text and chart titles are not fact-traced; the quote trace cannot detect a truncated quote; fonts load from Google at render time; the stand-in voice is noise; single-process rendering; the area-fill edge; bar-race pacing is proportional.
+
+## Plan 6 results (the make-explainer skill and three rehearsal videos)
+Gate waived for the rehearsal only; the videos are drafts for the user to review (voice, pacing and taste are not judged by the agent).
+
+| Video | Facts | verify-facts | Repair rounds | Estimate vs real | Produce | Loudness |
+|---|---|---|---|---|---|---|
+| `us-inflation` (BLS CPI, Dec-to-Dec 2016-2023; line-chart, big-number, compare, kinetic) | 3 | 3 supported | check OK first pass; 1 length round; narration corrected after review | 58.7 s vs 55.4 s (first version) | 127 s | -14.05 LUFS |
+| `rule-of-72` (Wikipedia; big-number, compare, kinetic) | 3 | 3 supported (weak: small integers) | check OK first pass; 2 produce rounds (50.2 s rejected, then 57.5 s) | 67.7 s vs 57.5 s | about 2 min | -14.1 LUFS |
+| `roman-republic` (Wikipedia; timeline, map, kinetic) | 2 | 1 supported, 1 partial (no numbers) | check OK first pass; 4 narration lines cut to what the pages say | 60.6 s vs 58.9 s | 125 s | -14.06 LUFS |
+
+- The first estimator (2.68 words/s) ran 3 to 15 percent long on these videos (real/estimate 0.94, 0.85, 0.97; real words per second 2.85, 3.18, 2.76). After the review it was recalibrated to 2.85 words/s, pooled over all six real runs (2.50 to 3.18 individually), and is pinned by a test to within 12 percent on all six; `produce` stays authoritative. `us-inflation` was re-produced after its narration was corrected: 57.3 s, -14.05 LUFS.
+- Real-source run on the old finance demo facts: spglobal.com 403, example.com 404, bls.gov landing page lacks the data: the verifier does not rubber-stamp. Bug found there and fixed: comma twins of years ("2,015") made year datasets unable to be `supported`.
+- A web summary of BLS gave annual-average inflation figures that differ from the opened table (December to December); only numbers from the opened page were used. The 2015 point was dropped because the page table starts at 2016.
+- What the rehearsal changed in the skill: narration must state only what an opened page says; small integers make `supported` weak; the estimate runs long.
+- Frames checked on the final mp4s: Steady callout on the line near 2019, 7.0% big number, timeline spine on the spoken event, map countries lit with the caption.
+
+### Open items
+- For the user to judge: voice and pronunciation (for example "nine point zero zero six", "five oh nine BC"), pacing, hooks, taste.
+- Carried gaps: titles, callout text and chart titles are not fact-traced; the quote trace cannot detect a truncated quote; fonts load from Google at render time; single-process rendering; Edge TTS needs internet; verify-facts cannot prove a number means what the claim says; it does not pin the resolved DNS address; narration figures are untraced; small review minors are listed in the ledger.

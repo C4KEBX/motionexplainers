@@ -246,6 +246,8 @@ const SceneSchema = z.discriminatedUnion("type", [
   MapSceneSchema,
 ]);
 
+export const SCENE_TYPES: readonly Scene["type"][] = SceneSchema.options.map((option) => option.shape.type.value);
+
 export const StoryboardSchema = z
   .strictObject({
     schemaVersion: z.literal(1),

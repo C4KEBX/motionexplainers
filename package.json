@@ -14,7 +14,11 @@
     "still:finance": "remotion still src/index.ts FinanceDemo",
     "still:hello": "remotion still src/index.ts HelloBigNumber out/hello.png --frame=100",
     "setup:tts": "python3 -m venv tts/.venv && tts/.venv/bin/pip install -q -r tts/requirements.txt",
-    "produce": "tsx scripts/produce.ts"
+    "produce": "tsx scripts/produce.ts",
+    "check": "tsx scripts/check.ts",
+    "catalog": "tsx scripts/catalog.ts",
+    "sheet": "tsx scripts/sheet.ts",
+    "verify-facts": "tsx scripts/verify-facts.ts"
   },
   "dependencies": {
     "@remotion/bundler": "4.0.533",

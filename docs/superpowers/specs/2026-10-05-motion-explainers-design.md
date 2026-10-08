@@ -121,14 +121,18 @@ Music is either generated (`audio.music: "ambient"`, an original drone bed, no l
 
 ffmpeg: music bed ducked under narration, loudness-normalized to -14 LUFS. No music API is needed.
 
-## 7. Claude Code skill (`skill/`)
+## 7. Claude Code skill (`.claude/skills/make-explainer/`)
 
-1. Topic -> research notes -> `facts.json` with sources.
-2. Facts -> script (~150 words for 60s) -> storyboard JSON, using the template catalog and curated example storyboards as few-shot context.
-3. Schema validation with automatic repair loop.
-4. Render, then hand over the MP4 plus a review sheet (stills of every scene and the fact list).
+As built (Plan 6). The skill is a project skill, so Claude Code discovers `/make-explainer <topic>` itself; outputs live in `videos/<slug>/`.
 
-A **human review gate** sits before the final render, since the content is finance and investing.
+1. Brief, then research: WebSearch and WebFetch primary sources; write `facts.json` (id, claim, `value` or `dataset`, source name and url). Numbers are only ever copied from a page that was opened.
+2. `npm run verify-facts` (advisory; guarded fetch: http(s) only, private/local and mapped-IPv6 addresses blocked, DNS names resolved and checked on every hop, no address pinning) checks that a fact's numbers appear on its source page.
+3. Script and storyboard: about 155 words for 60 s, using the generated `storyboard.schema.json`, `rules.md` and the three fixtures as examples.
+4. `npm run check` collects every validation issue in one pass (repair loop, at most 6 rounds), estimates length at 2.85 words/s (good to about 10 percent; `produce` is authoritative) and lints advice-style phrasing.
+5. **Human review gate:** `npm run sheet` writes a self-contained `review.html` (a still per scene, narration, cues, every fact with its source check, warnings for untraced text). The skill stops there.
+6. After approval, `npm run produce` renders the final mp4.
+
+Hard rules: never edit `src/`, `tests/` or validators to make a storyboard pass; never change a fact to match a storyboard or the reverse without re-reading the source; no advice or predictions. `rules.md` and `storyboard.schema.json` are guard-tested against the scene types and scripts. The rehearsal waived the gate for three draft videos (see `spikes/RESULTS.md`).
 
 ## 8. Build order
 
@@ -140,7 +144,7 @@ Each milestone ends in something watchable.
 4. **Text and layout scenes**: `kinetic-text`, `compare`, `quote`, scene transitions. **Done (Plan 4)**, together with narration-paced line drawing; see Plan 4 decisions.
 5. **History scenes**: `timeline`, `map`. **Done (Plan 5)**; see Plan 5 decisions.
 6. **Audio finish**: captions, music ducking, loudness. **Done (Plan 3)**: word-by-word captions in a fixed lane (charts shrank to make room), narration from Edge TTS with a deterministic offline stand-in, a ducked music bed, two-pass loudness to -14 LUFS, and `npm run produce` end to end.
-7. **Skill**, then first real 60s videos: one finance, one investing, one history.
+7. **Skill**, then first real 60s videos: one finance, one investing, one history. **Done (Plan 6)**: `/make-explainer`, with three rehearsal videos (`videos/us-inflation`, `videos/rule-of-72`, `videos/roman-republic`) awaiting human review.
 
 ## 9. Project structure
 
@@ -151,7 +155,8 @@ src/design/      tokens, motion primitives
 src/scenes/      one folder per template
 src/schema/      storyboard + facts contracts
 src/pipeline/    voice, captions, ffmpeg steps
-skill/           Claude Code skill
+.claude/skills/  Claude Code skill (make-explainer)
+videos/          per-video facts and storyboards
 docs/superpowers/specs/
 ```
 
