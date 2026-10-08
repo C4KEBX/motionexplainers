@@ -1,0 +1,25 @@
+{
+  "facts": [
+    {
+      "id": "f-cpi",
+      "claim": "US CPI-U all items, percent change from 12 months ago (December to December), 2016-2023.",
+      "dataset": [
+        { "x": 2016, "y": 2.1 }, { "x": 2017, "y": 2.1 }, { "x": 2018, "y": 1.9 }, { "x": 2019, "y": 2.3 },
+        { "x": 2020, "y": 1.4 }, { "x": 2021, "y": 7.0 }, { "x": 2022, "y": 6.5 }, { "x": 2023, "y": 3.4 }
+      ],
+      "source": { "name": "US Bureau of Labor Statistics, CPI Historical Tables", "url": "https://www.bls.gov/regions/mid-atlantic/data/consumerpriceindexhistorical_us_table.htm" }
+    },
+    {
+      "id": "f-2021",
+      "claim": "US CPI-U rose 7.0 percent from December 2020 to December 2021.",
+      "value": 7.0,
+      "source": { "name": "US Bureau of Labor Statistics, CPI Historical Tables", "url": "https://www.bls.gov/regions/mid-atlantic/data/consumerpriceindexhistorical_us_table.htm" }
+    },
+    {
+      "id": "f-2023",
+      "claim": "US CPI-U rose 3.4 percent from December 2022 to December 2023.",
+      "value": 3.4,
+      "source": { "name": "US Bureau of Labor Statistics, CPI Historical Tables", "url": "https://www.bls.gov/regions/mid-atlantic/data/consumerpriceindexhistorical_us_table.htm" }
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "facts": [
+    {
+      "id": "f-dates",
+      "claim": "Traditional and recorded dates of the Roman Republic: overthrow of the monarchy c. 509 BC; First Punic War 264-241 BC; assassination of Caesar 15 March 44 BC; Battle of Actium 2 September 31 BC; Octavian proclaimed Augustus 16 January 27 BC.",
+      "dataset": [
+        { "year": -509, "label": "Republic founded" },
+        { "year": -264, "label": "First Punic War begins" },
+        { "year": -44, "label": "Caesar assassinated" },
+        { "year": -31, "label": "Battle of Actium" },
+        { "year": -27, "label": "Augustus proclaimed" }
+      ],
+      "source": { "name": "Wikipedia, Roman Republic", "url": "https://en.wikipedia.org/wiki/Roman_Republic" }
+    },
+    {
+      "id": "f-carthage",
+      "claim": "Carthage was an ancient city in northern Africa, in what is now Tunisia; the Romans fought three wars against Carthage, known as the Punic Wars.",
+      "dataset": ["Italy", "Tunisia"],
+      "source": { "name": "Wikipedia, Carthage", "url": "https://en.wikipedia.org/wiki/Carthage" }
+    }
+  ]
+}

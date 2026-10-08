@@ -1,0 +1,43 @@
+[
+  {
+    "factId": "f-cpi",
+    "url": "https://www.bls.gov/regions/mid-atlantic/data/consumerpriceindexhistorical_us_table.htm",
+    "found": [
+      "2016",
+      "2.1",
+      "2017",
+      "2018",
+      "1.9",
+      "2019",
+      "2.3",
+      "2020",
+      "1.4",
+      "2021",
+      "7",
+      "2022",
+      "6.5",
+      "2023",
+      "3.4"
+    ],
+    "missing": [],
+    "status": "supported"
+  },
+  {
+    "factId": "f-2021",
+    "url": "https://www.bls.gov/regions/mid-atlantic/data/consumerpriceindexhistorical_us_table.htm",
+    "found": [
+      "7"
+    ],
+    "missing": [],
+    "status": "supported"
+  },
+  {
+    "factId": "f-2023",
+    "url": "https://www.bls.gov/regions/mid-atlantic/data/consumerpriceindexhistorical_us_table.htm",
+    "found": [
+      "3.4"
+    ],
+    "missing": [],
+    "status": "supported"
+  }
+]

@@ -1,0 +1,22 @@
+{
+  "facts": [
+    {
+      "id": "f-9",
+      "claim": "At 9% annual interest, 72/9 = 8 years are required for an investment to double (the exact calculation is 8.0432 years).",
+      "value": 8,
+      "source": { "name": "Wikipedia, Rule of 72", "url": "https://en.wikipedia.org/wiki/Rule_of_72" }
+    },
+    {
+      "id": "f-8rule",
+      "claim": "At an 8% rate, the Rule of 72 gives 9.000 years to double.",
+      "value": 9,
+      "source": { "name": "Wikipedia, Rule of 72", "url": "https://en.wikipedia.org/wiki/Rule_of_72" }
+    },
+    {
+      "id": "f-8exact",
+      "claim": "At an 8% rate, the actual time to double is 9.006 years.",
+      "value": 9.006,
+      "source": { "name": "Wikipedia, Rule of 72", "url": "https://en.wikipedia.org/wiki/Rule_of_72" }
+    }
+  ]
+}

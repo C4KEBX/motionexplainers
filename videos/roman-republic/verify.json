@@ -1,0 +1,23 @@
+[
+  {
+    "factId": "f-dates",
+    "url": "https://en.wikipedia.org/wiki/Roman_Republic",
+    "found": [
+      "509",
+      "264",
+      "44",
+      "31",
+      "27"
+    ],
+    "missing": [],
+    "status": "supported"
+  },
+  {
+    "factId": "f-carthage",
+    "url": "https://en.wikipedia.org/wiki/Carthage",
+    "found": [],
+    "missing": [],
+    "status": "partial",
+    "detail": "nothing numeric to check; read the source yourself"
+  }
+]

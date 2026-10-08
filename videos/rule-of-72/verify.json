@@ -1,0 +1,29 @@
+[
+  {
+    "factId": "f-9",
+    "url": "https://en.wikipedia.org/wiki/Rule_of_72",
+    "found": [
+      "8"
+    ],
+    "missing": [],
+    "status": "supported"
+  },
+  {
+    "factId": "f-8rule",
+    "url": "https://en.wikipedia.org/wiki/Rule_of_72",
+    "found": [
+      "9"
+    ],
+    "missing": [],
+    "status": "supported"
+  },
+  {
+    "factId": "f-8exact",
+    "url": "https://en.wikipedia.org/wiki/Rule_of_72",
+    "found": [
+      "9.006"
+    ],
+    "missing": [],
+    "status": "supported"
+  }
+]
